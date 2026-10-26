@@ -22,8 +22,8 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   font-family: var(--font);
-  color: var(--ink);
-  background: #bfe6fb;
+  color: var(--text);
+  background: var(--forest-2);
 }
 
 button {
@@ -54,17 +54,16 @@ p {
   overflow: hidden;
   isolation: isolate;
   container-type: size;
-  background: var(--sky-bottom);
-  font-size: clamp(13px, 4.2cqw, 19px);
+  background: var(--forest-2);
+  font-size: clamp(13px, 4.1cqw, 18px);
 }
 
 @media (min-width: 700px) and (min-height: 600px) and (hover: hover) and (pointer: fine) {
   .desk {
     background:
-      radial-gradient(rgb(38 49 61 / 0.07) 1.6px, transparent 1.8px) 0 0 / 24px 24px,
-      radial-gradient(circle at 18% 22%, #dff3ff 0, transparent 42%),
-      radial-gradient(circle at 82% 78%, #e3f7d4 0, transparent 46%),
-      #c4e7fa;
+      radial-gradient(circle at 20% 15%, rgb(140 195 74 / 0.12) 0, transparent 45%),
+      radial-gradient(circle at 80% 85%, rgb(233 196 106 / 0.1) 0, transparent 45%),
+      linear-gradient(160deg, #1d3526, #0f1d15);
   }
 
   .device {
@@ -73,9 +72,9 @@ p {
     aspect-ratio: 9 / 19.5;
     border-radius: 46px;
     box-shadow:
-      0 0 0 10px #1f2836,
-      0 0 0 13px #3b475b,
-      0 40px 90px -20px rgb(31 70 110 / 0.55);
+      0 0 0 10px #0b120d,
+      0 0 0 11px rgb(255 255 255 / 0.12),
+      0 40px 90px -20px rgb(0 0 0 / 0.6);
   }
 }
 

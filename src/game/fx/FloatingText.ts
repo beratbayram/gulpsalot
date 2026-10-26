@@ -25,11 +25,11 @@ export class FloatingText {
         text: '',
         style: {
           fontFamily: GAME_FONT,
-          fontSize: 34,
+          fontSize: 28,
           fontWeight: '700',
           fill: PALETTE.white,
-          stroke: { color: PALETTE.ink, width: 7, join: 'round' },
           align: 'center',
+          dropShadow: { color: 0x000000, alpha: 0.5, blur: 4, distance: 1.5, angle: Math.PI / 2 },
         },
         resolution: 2,
       })

@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, type Renderer, type Texture } from 'pixi.js'
 import { TAU, lerp } from '../../lib/math'
 import type { Rng } from '../../lib/random'
+import { paper, softBlob, toTexture } from '../draw/paint'
 import { PALETTE } from '../draw/palette'
 
 type Shape = 'dot' | 'star' | 'ring'
@@ -54,7 +55,7 @@ export class Particles {
   constructor(renderer: Renderer, rng: Rng, size = 180) {
     this.rng = rng
     this.textures = {
-      dot: renderer.generateTexture(new Graphics().circle(0, 0, TEX_SIZE / 2).fill(PALETTE.white)),
+      dot: softDot(),
       star: renderer.generateTexture(
         new Graphics().star(0, 0, 5, TEX_SIZE / 2, TEX_SIZE / 4.4).fill(PALETTE.white),
       ),
@@ -85,6 +86,10 @@ export class Particles {
         alpha0: 1,
       })
     }
+  }
+
+  dispose() {
+    Object.values(this.textures).forEach((t) => t.destroy(true))
   }
 
   burst(o: BurstOptions) {
@@ -157,4 +162,13 @@ export class Particles {
       s.alpha = p.alpha0 * (p.shape === 'ring' ? 1 - t : t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4)
     }
   }
+}
+
+/** Soft round droplet with a brighter core, sized TEX_SIZE world units. */
+function softDot() {
+  const half = TEX_SIZE / 2
+  const p = paper(-half, -half, TEX_SIZE, TEX_SIZE, 2)
+  softBlob(p.ctx, 0, 0, half, half, 0xffffff, 0.55, 0.25)
+  softBlob(p.ctx, 0, 0, half * 0.5, half * 0.5, 0xffffff, 1, 0.4)
+  return toTexture(p)
 }

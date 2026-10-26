@@ -13,6 +13,7 @@ export function Splash() {
       exit={{ opacity: 0, transition: { duration: 0.35 } }}
     >
       <PofikFace className="splash__face" />
+      <span className="splash__name">Pofik</span>
     </m.div>
   )
 }

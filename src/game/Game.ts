@@ -1,5 +1,5 @@
 import { Application, Container, type Ticker } from 'pixi.js'
-import { TAU, clamp, sweptHit } from '../lib/math'
+import { clamp, sweptHit } from '../lib/math'
 import { Rng } from '../lib/random'
 import { Pond } from './background/Pond'
 import { StepClock } from './clock'
@@ -130,6 +130,7 @@ export class Game {
   private readonly mouth: TongueRoot = { x: 0, y: 0, rx: 1, ry: 1, rot: 0 }
   private hudLast = { h: -1, s: -1, c: false }
   private destroyed = false
+  private paintRes = 0
 
   static async create(host: HTMLElement, opts: GameOptions) {
     const app = new Application()
@@ -138,7 +139,7 @@ export class Game {
       antialias: true,
       autoDensity: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
-      backgroundColor: PALETTE.skyBottom,
+      backgroundColor: PALETTE.skyHorizon,
       width: Math.max(1, host.clientWidth),
       height: Math.max(1, host.clientHeight),
       powerPreference: 'high-performance',
@@ -166,7 +167,7 @@ export class Game {
       this.hints.view,
     )
     this.root.addChild(this.camera)
-    app.stage.addChild(this.root, this.vignette.sprite)
+    app.stage.addChild(this.root, this.vignette.view)
 
     this.debug = opts.debug ? new DebugOverlay() : null
     if (this.debug) {
@@ -240,16 +241,16 @@ export class Game {
     this.particles.burst({
       x: this.mouth.x,
       y: this.mouth.y - 40,
-      count: 18,
-      shape: 'star',
-      colors: [PALETTE.star, PALETTE.white, PALETTE.bodyLight],
-      speed: [140, 320],
-      life: [0.4, 0.8],
-      size: [8, 16],
-      gravity: 300,
-      drag: 2.5,
-      spin: 6,
+      count: 16,
+      colors: [PALETTE.sun, PALETTE.white],
+      speed: [40, 120],
+      life: [0.6, 1.1],
+      size: [3, 7],
+      gravity: -40,
+      drag: 1.5,
+      alpha: 0.8,
     })
+    this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 6, 1.2)
     this.ensureRunning()
     this.pushHud(true)
   }
@@ -276,7 +277,11 @@ export class Game {
     this.app.ticker.remove(this.frame)
     this.events.clear()
     this.opts.buzz.silence()
-    this.app.destroy({ removeView: true }, { children: true, texture: true, textureSource: true })
+    // Textures are freed by their owners; the insect art cache is shared between instances.
+    this.app.destroy({ removeView: true }, { children: true })
+    this.pond.dispose()
+    this.pofik.dispose()
+    this.particles.dispose()
   }
 
   /** Read-only view of the run, for debugging and automated checks. */
@@ -321,7 +326,13 @@ export class Game {
     this.root.position.set(offsetX, offsetY)
     this.camera.pivot.set(W / 2, H / 2)
     this.camera.position.set(W / 2, H / 2)
-    if (prevH !== H) this.pond.build(this.layout)
+    // Paint textures at the real screen density so they stay crisp.
+    const res = scale * this.app.renderer.resolution
+    if (prevH !== H || Math.abs(res - this.paintRes) / res > 0.15) {
+      this.paintRes = res
+      this.pond.build(this.layout, res)
+    }
+    this.pofik.build(res)
     this.zone = {
       left: 26,
       right: W - 26,
@@ -461,18 +472,7 @@ export class Game {
       this.pofik.boop()
       this.opts.sound.boop()
       this.opts.haptics.light()
-      this.particles.burst({
-        x: p.x,
-        y: p.y - 10,
-        count: 5,
-        colors: [PALETTE.blush, PALETTE.white],
-        speed: [60, 140],
-        angle: [Math.PI + 0.5, TAU - 0.5],
-        life: [0.35, 0.6],
-        size: [6, 10],
-        gravity: -60,
-        drag: 3,
-      })
+      this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 8, 0.6)
       return
     }
     this.pendingTap = { x: p.x, y: p.y, t: this.time }
@@ -518,15 +518,18 @@ export class Game {
     this.tongue.attached.push(fly)
     this.stickCount++
     this.opts.sound.stick(this.stickCount)
+    // A few wet droplets where the sticky tip hits.
     this.particles.burst({
       x: fly.x,
       y: fly.y,
-      count: 7,
-      colors: [PALETTE.white, PALETTE.puff, PALETTE.tongueLight],
-      speed: [70, 180],
-      life: [0.18, 0.34],
-      size: [4, 8],
-      drag: 6,
+      count: 5,
+      colors: [PALETTE.white, PALETTE.tongueLight],
+      speed: [40, 120],
+      life: [0.25, 0.45],
+      size: [1.5, 3.5],
+      gravity: 380,
+      drag: 2,
+      alpha: 0.8,
     })
     this.clock.hitStopFor(CONFIG.fx.hitStopCatch)
     this.shake.add(CONFIG.fx.catchTrauma)
@@ -536,20 +539,31 @@ export class Game {
     const t = this.tongue
     t.yank()
     bee.flee(t.tipX, t.tipY, this.time)
+    // Soft impact flash and a few specks knocked loose.
     this.particles.burst({
       x: t.tipX,
       y: t.tipY,
-      count: 9,
-      shape: 'star',
-      colors: [PALETTE.star, 0xffa53d, PALETTE.white],
-      speed: [160, 340],
-      life: [0.3, 0.55],
-      size: [10, 18],
-      drag: 4,
-      spin: 8,
+      count: 1,
+      colors: [PALETTE.white],
+      speed: [0, 0],
+      life: [0.18, 0.18],
+      size: [36, 36],
+      endScale: 1.6,
+      drag: 0,
+      alpha: 0.7,
     })
-    this.particles.ring(t.tipX, t.tipY, PALETTE.sting, 12, 80, 0.35)
-    this.floaters.show('Ouch!', t.tipX, t.tipY - 16, PALETTE.sting, 30)
+    this.particles.burst({
+      x: t.tipX,
+      y: t.tipY,
+      count: 7,
+      colors: [PALETTE.beeAmber, PALETTE.beeBand, PALETTE.white],
+      speed: [80, 220],
+      life: [0.3, 0.6],
+      size: [1.5, 3.5],
+      gravity: 300,
+      drag: 2,
+    })
+    this.floaters.show('Ouch!', t.tipX, t.tipY - 16, 0xffd2c8, 26)
     this.clock.hitStopFor(CONFIG.fx.hitStopSting)
     this.shake.add(CONFIG.fx.stingTrauma)
     this.vignette.flash()
@@ -581,25 +595,12 @@ export class Game {
     this.opts.sound.gulp(n)
     this.opts.haptics.light()
     this.shake.add(CONFIG.fx.gulpTrauma)
-    this.particles.burst({
-      x: this.mouth.x,
-      y: this.mouth.y,
-      count: 10 + n * 3,
-      colors: [PALETTE.puff, PALETTE.bodyLight, PALETTE.white],
-      speed: [90, 230],
-      angle: [Math.PI + 0.25, TAU - 0.25],
-      life: [0.28, 0.5],
-      size: [5, 10],
-      gravity: 520,
-      drag: 3,
-    })
-    this.particles.ring(this.mouth.x, this.mouth.y, PALETTE.white, 14, 66, 0.32, 0.8)
     this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 8, 0.9)
 
     if (!t.scored || this.mode !== 'playing') return
     this.score += n
     this.hunger = rules.feed(this.hunger, n)
-    this.floaters.show(`+${n}`, this.mouth.x, this.mouth.y - 112, PALETTE.white, n > 1 ? 40 : 34)
+    this.floaters.show(`+${n}`, this.mouth.x, this.mouth.y - 100, PALETTE.white, n > 1 ? 34 : 28)
     this.opts.hints.markDone('tapFly')
     this.events.emit('caught', { count: n, score: this.score })
   }

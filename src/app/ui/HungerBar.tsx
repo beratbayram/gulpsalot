@@ -3,9 +3,9 @@ import { useGame } from '../gameContext'
 import { useHudStore } from '../hudStore'
 import { PofikFace } from './PofikFace'
 
-const GOOD = [139, 214, 90]
-const OK = [255, 201, 60]
-const BAD = [255, 90, 90]
+const GOOD = [140, 195, 74]
+const OK = [233, 196, 106]
+const BAD = [224, 122, 95]
 
 function hungerColor(h: number) {
   const [a, b, t] = h > 0.5 ? [OK, GOOD, (h - 0.5) / 0.5] : [BAD, OK, h / 0.5]

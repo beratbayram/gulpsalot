@@ -59,8 +59,13 @@ src/
 - **Springs everywhere.** The tongue tip, Pofik's squash and stretch, lean, eyes, belly
   and most reactions are damped springs (`src/lib/spring.ts`). The tongue body is a short
   Verlet rope so fast shots whip and curve.
-- **All art is code.** Pofik, insects and the pond are drawn with Pixi Graphics; the UI
-  uses the same palette (`src/game/draw/palette.ts`, mirrored in `tokens.css`).
+- **All art is code, painted for realism.** Pofik, the insects and the pond are painted
+  once into textures with Canvas 2D (`src/game/draw/paint.ts`): gradients and soft
+  lighting, noise-based skin mottling, wet highlights and film grain. Sprites animate
+  those textures, and the water reflection ripples through a displacement filter.
+  Textures are painted at the screen's real pixel density and repainted on big resizes.
+  The UI uses the same natural palette (`src/game/draw/palette.ts`, mirrored in
+  `tokens.css`) with frosted-glass controls, Fraunces for titles and Inter for text.
 - **All sound is synthesized** with oscillators and filtered noise
   (`src/audio/sfx.ts`). The nearest fly and bee each drive a quiet, panned buzz.
 

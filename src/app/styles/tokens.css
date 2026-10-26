@@ -1,29 +1,30 @@
-/* Mirrors src/game/draw/palette.ts so the UI and the game share one look. */
+/* Natural palette; mirrors the key colors in src/game/draw/palette.ts. */
 :root {
-  --ink: #26313d;
-  --cream: #fff6e0;
-  --cream-deep: #ffe9c2;
-  --sky-top: #78c6f0;
-  --sky-bottom: #e2f5ff;
-  --green: #8bd65a;
-  --green-light: #a6e57a;
-  --green-dark: #5fb63f;
-  --orange: #ff9636;
-  --orange-light: #ffb85c;
-  --pink: #ff7096;
-  --yellow: #ffc93c;
-  --red: #ff5a5a;
+  --forest: #13221a;
+  --forest-2: #1f3b2a;
+  --leaf: #8cc34a;
+  --cream: #f6f1e1;
+  --text: #f8f6ee;
+  --text-dim: rgb(248 246 238 / 0.78);
+  --ink: #1b2a19;
+  --amber: #e9c46a;
+  --amber-deep: #c99a36;
+  --danger: #e07a5f;
 
-  --font: 'Fredoka Variable', 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --glass: rgb(255 255 255 / 0.14);
+  --glass-strong: rgb(20 34 24 / 0.5);
+  --glass-border: rgb(255 255 255 / 0.3);
+  --glass-blur: blur(14px) saturate(140%);
+  --shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+  --text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+
+  --font: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
 
   --safe-top: max(14px, env(safe-area-inset-top));
   --safe-bottom: max(14px, env(safe-area-inset-bottom));
   --safe-left: max(14px, env(safe-area-inset-left));
   --safe-right: max(14px, env(safe-area-inset-right));
 
-  --border: 3px solid var(--ink);
-  --drop: 0 5px 0 var(--ink);
-  --drop-sm: 0 3px 0 var(--ink);
-
-  color-scheme: light;
+  color-scheme: dark;
 }

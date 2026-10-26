@@ -1,10 +1,11 @@
-import { Container, Graphics } from 'pixi.js'
+import { Container, Sprite, type Texture } from 'pixi.js'
 import { TAU, clamp } from '../../lib/math'
 import { createNoise1D } from '../../lib/noise'
 import type { Rng } from '../../lib/random'
 import { Spring } from '../../lib/spring'
 import { CONFIG } from '../config'
 import { PALETTE } from '../draw/palette'
+import { getInsectArt } from './insectArt'
 
 export type InsectKind = 'fly' | 'bee'
 export type InsectState = 'wander' | 'leave' | 'flee' | 'caught' | 'gone'
@@ -36,8 +37,10 @@ export class Insect {
   /** Bees can't sting again until this game time. */
   safeUntil = 0
 
-  private readonly wings = new Container()
   private readonly art = new Container()
+  private readonly wings: Sprite[] = []
+  private readonly wingBase: number[] = []
+  private readonly blur: Sprite
   private readonly baseScale: number
   private readonly seed = seedCounter++ * 17.31
   private readonly facing = new Spring(1, { freq: 3.6, damping: 0.62 })
@@ -57,9 +60,23 @@ export class Insect {
   constructor(kind: InsectKind) {
     this.kind = kind
     this.hitR = kind === 'fly' ? CONFIG.insects.flyHitRadius : CONFIG.insects.beeHitRadius
-    this.baseScale = kind === 'fly' ? 1.25 : 1.15
-    if (kind === 'fly') drawFly(this.art, this.wings)
-    else drawBee(this.art, this.wings)
+    this.baseScale = 1
+    const art = getInsectArt()[kind]
+    const body = new Sprite(art.body)
+    body.anchor.set(art.bodyAnchor.x, art.bodyAnchor.y)
+    this.blur = makeWing(art.blur, art.wingRoot, 0)
+    this.blur.anchor.set(0.5)
+    this.blur.position.set(art.wingRoot.x - 5, art.wingRoot.y - 3)
+    this.art.addChild(body)
+    // Far wing behind the near one, both rooted on the thorax.
+    for (const [angle, alpha] of art.wingAngles) {
+      const w = makeWing(art.wing, art.wingRoot, angle)
+      w.alpha = alpha
+      this.wings.push(w)
+      this.wingBase.push(angle)
+      this.art.addChild(w)
+    }
+    this.art.addChild(this.blur)
     this.view.addChild(this.art)
     this.view.visible = false
   }
@@ -211,11 +228,19 @@ export class Insect {
     this.view.position.set(this.x, this.y + bob)
     const s = this.baseScale * (caught ? 0.92 : 1)
     this.view.scale.set(this.facing.value * s, s)
-    this.wings.scale.y = caught ? 0.3 : 0.32 + 0.68 * Math.abs(Math.sin(this.flap))
+    // Real wings beat far faster than the frame rate: show a soft blur disc plus
+    // a wing caught at a random-looking phase each frame.
+    const beat = Math.sin(this.flap)
+    this.wings.forEach((w, i) => {
+      w.rotation = caught ? this.wingBase[i] * 0.4 + 0.2 : this.wingBase[i] - beat * 0.75
+      w.scale.y = caught ? 0.8 : 0.7 + 0.3 * Math.abs(Math.cos(this.flap))
+    })
+    this.blur.visible = !caught
+    this.blur.alpha = 0.35 + 0.15 * Math.abs(beat)
     this.view.rotation = caught
       ? this.spin
       : clamp(this.vy * 0.0016, -0.35, 0.35) * Math.sign(this.facing.value || 1)
-    this.art.tint = this.angry > 0 && Math.sin(this.time * 30) > -0.3 ? 0xffa89a : PALETTE.white
+    this.art.tint = this.angry > 0 && Math.sin(this.time * 30) > -0.3 ? 0xffb8a8 : PALETTE.white
   }
 
   private arrive(rng: Rng, zone: Zone) {
@@ -246,74 +271,10 @@ export class Insect {
   }
 }
 
-function drawFly(art: Container, wings: Container) {
-  const ink = PALETTE.ink
-  const body = new Graphics()
-  body
-    .moveTo(-4, 4)
-    .lineTo(-6, 9)
-    .moveTo(0, 5)
-    .lineTo(0, 10)
-    .moveTo(4, 4)
-    .lineTo(6, 9)
-    .stroke({ width: 1.6, color: ink, cap: 'round' })
-  body.ellipse(-2, 0, 9, 6.5).fill(PALETTE.fly).stroke({ width: 2, color: ink })
-  body.moveTo(-5, -5).quadraticCurveTo(-3, 0, -5, 5).stroke({ width: 1.4, color: 0x5b6274 })
-  body.circle(7.5, -1, 5.2).fill(PALETTE.flyHead).stroke({ width: 2, color: ink })
-  body.circle(9.2, -2.4, 3.4).fill(PALETTE.white)
-  body.circle(10.2, -2.2, 1.7).fill(ink)
-
-  const w = new Graphics()
-  w.ellipse(-6, -5, 7.5, 4.5).fill({ color: PALETTE.wing, alpha: 0.78 }).stroke({
-    width: 1.5,
-    color: ink,
-    alpha: 0.55,
-  })
-  w.ellipse(1, -7, 8.5, 5).fill({ color: PALETTE.wing, alpha: 0.85 }).stroke({
-    width: 1.5,
-    color: ink,
-    alpha: 0.55,
-  })
-  wings.addChild(w)
-  wings.position.set(-1, -4)
-  art.addChild(body, wings)
-}
-
-function drawBee(art: Container, wings: Container) {
-  const ink = PALETTE.ink
-  const body = new Graphics()
-  body.poly([-13, -2, -22, 1, -13, 4]).fill(ink)
-  body.ellipse(0, 0, 15, 11).fill(PALETTE.bee).stroke({ width: 2.5, color: ink })
-  for (const sx of [-7, 0.5]) {
-    const hb = 2 * 11 * Math.sqrt(1 - (sx / 15) ** 2) - 3
-    body.roundRect(sx - 2.6, -hb / 2, 5.2, hb, 2.4).fill(PALETTE.beeDark)
-  }
-  body
-    .moveTo(13, -8)
-    .quadraticCurveTo(15, -16, 20, -17)
-    .stroke({ width: 2, color: ink, cap: 'round' })
-  body.circle(20, -17, 2.2).fill(ink)
-  body.circle(13, -2, 7.5).fill(PALETTE.beeDark).stroke({ width: 2.5, color: ink })
-  body.circle(15.5, -3.8, 3.3).fill(PALETTE.white)
-  body.circle(16.4, -3.6, 1.7).fill(ink)
-  // A tiny frown so bees read as "do not touch".
-  body
-    .moveTo(12.5, -8.6)
-    .lineTo(17.5, -6.8)
-    .stroke({ width: 1.8, color: PALETTE.white, cap: 'round' })
-
-  const w = new Graphics()
-  w.ellipse(-5, -6, 8, 6).fill({ color: PALETTE.wing, alpha: 0.8 }).stroke({
-    width: 1.6,
-    color: ink,
-    alpha: 0.6,
-  })
-  w.ellipse(3, -8, 9, 7).fill({ color: PALETTE.wing, alpha: 0.88 }).stroke({
-    width: 1.6,
-    color: ink,
-    alpha: 0.6,
-  })
-  wings.addChild(w)
-  wings.position.set(-2, -9)
-  art.addChild(body, wings)
+function makeWing(texture: Texture, root: { x: number; y: number }, angle: number) {
+  const w = new Sprite(texture)
+  w.anchor.set(0, 0.5)
+  w.position.set(root.x, root.y)
+  w.rotation = angle
+  return w
 }

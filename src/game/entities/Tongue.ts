@@ -17,8 +17,8 @@ const ROPE_BEND = 0.22
 const SAMPLE_SPACING = 14
 const MAX_SAMPLES = 40
 const SUBDIV = 2
-const BASE_HALF_WIDTH = 11.5
-const TIP_HALF_WIDTH = 6.5
+const BASE_HALF_WIDTH = 10.5
+const TIP_HALF_WIDTH = 5.5
 
 /** The resting tongue inside the open mouth, where the tongue grows from. World space. */
 export interface TongueRoot {
@@ -214,9 +214,9 @@ export class Tongue {
     const first = this.firstOutside(root, count)
     if (first < count - 1) {
       polyline(g, this.left.slice(first * 2))
-      g.stroke({ width: 3, color: PALETTE.ink, join: 'round', cap: 'round' })
+      g.stroke({ width: 1.6, color: PALETTE.tongueDark, alpha: 0.9, join: 'round', cap: 'round' })
       polyline(g, this.right.slice(first * 2))
-      g.stroke({ width: 3, color: PALETTE.ink, join: 'round', cap: 'round' })
+      g.stroke({ width: 1.6, color: PALETTE.tongueDark, alpha: 0.9, join: 'round', cap: 'round' })
     }
 
     // The resting tongue in the mouth, drawn over the ribbon's base so it grows out of it.
@@ -238,11 +238,22 @@ export class Tongue {
       g.stroke({ width: 2.6, color: PALETTE.tongueLight, alpha: 0.85, cap: 'round', join: 'round' })
     }
 
-    const tr = 11.5 * clamp(thin, 0.85, 1.05)
-    g.circle(this.tipX, this.tipY, tr).fill(PALETTE.tongue).stroke({ width: 3, color: PALETTE.ink })
-    g.circle(this.tipX - tr * 0.32, this.tipY - tr * 0.36, tr * 0.3).fill({
+    // Sticky, bulbous tip: darker underside, wet highlight on top.
+    const tr = 10.5 * clamp(thin, 0.85, 1.05)
+    g.circle(this.tipX, this.tipY, tr)
+      .fill(PALETTE.tongue)
+      .stroke({ width: 1.4, color: PALETTE.tongueDark, alpha: 0.9 })
+    g.circle(this.tipX + tr * 0.12, this.tipY + tr * 0.22, tr * 0.72).fill({
+      color: PALETTE.tongueDark,
+      alpha: 0.35,
+    })
+    g.ellipse(this.tipX - tr * 0.28, this.tipY - tr * 0.38, tr * 0.42, tr * 0.26).fill({
       color: PALETTE.white,
-      alpha: 0.75,
+      alpha: 0.7,
+    })
+    g.circle(this.tipX + tr * 0.35, this.tipY - tr * 0.1, tr * 0.1).fill({
+      color: PALETTE.white,
+      alpha: 0.6,
     })
   }
 

@@ -1,4 +1,5 @@
-import '@fontsource-variable/fredoka'
+import '@fontsource-variable/inter'
+import '@fontsource-variable/fraunces'
 import './app/styles/tokens.css'
 import './app/styles/global.css'
 import './app/styles/ui.css'

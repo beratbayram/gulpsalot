@@ -81,33 +81,30 @@ export const CloseIcon = (p: IconProps) => (
   </svg>
 )
 
-/** Little cartoon fly used for the score. */
+/** House fly seen from above, for the score. */
 export const FlyIcon = (p: IconProps) => (
   <svg viewBox="0 0 32 32" aria-hidden {...p}>
-    <ellipse
-      cx="10.5"
-      cy="10"
-      rx="7"
-      ry="4.5"
-      fill="#eef8ff"
-      stroke="#26313d"
-      strokeWidth="1.6"
-      transform="rotate(-25 10.5 10)"
+    <path
+      d="M15 13 C9 9 3 11 4 15 C5 19 11 18 15 15 Z"
+      fill="#dfe8ef"
+      fillOpacity="0.55"
+      stroke="#fff"
+      strokeOpacity="0.6"
+      strokeWidth="0.6"
     />
-    <ellipse
-      cx="17"
-      cy="8.5"
-      rx="7.5"
-      ry="4.8"
-      fill="#eef8ff"
-      stroke="#26313d"
-      strokeWidth="1.6"
-      transform="rotate(-10 17 8.5)"
+    <path
+      d="M17 13 C23 9 29 11 28 15 C27 19 21 18 17 15 Z"
+      fill="#dfe8ef"
+      fillOpacity="0.55"
+      stroke="#fff"
+      strokeOpacity="0.6"
+      strokeWidth="0.6"
     />
-    <ellipse cx="13" cy="18" rx="8.5" ry="6.2" fill="#3c4252" stroke="#26313d" strokeWidth="2" />
-    <circle cx="22" cy="16.5" r="5" fill="#2c303c" stroke="#26313d" strokeWidth="2" />
-    <circle cx="23.6" cy="15.3" r="3" fill="#fff" />
-    <circle cx="24.4" cy="15.5" r="1.5" fill="#26313d" />
+    <ellipse cx="16" cy="19" rx="3.6" ry="6" fill="#2e2e2c" />
+    <ellipse cx="16" cy="12.5" rx="3.4" ry="3" fill="#5b5b57" />
+    <ellipse cx="14.2" cy="9.6" rx="1.8" ry="1.6" fill="#a3301c" />
+    <ellipse cx="17.8" cy="9.6" rx="1.8" ry="1.6" fill="#a3301c" />
+    <path d="M14.6 12 V14 M16 11.6 V14 M17.4 12 V14" stroke="#1c1c1a" strokeWidth="0.6" />
   </svg>
 )
 
@@ -119,11 +116,10 @@ export const PhoneIcon = (p: IconProps) => (
       width="22"
       height="40"
       rx="5"
-      fill="#fff6e0"
-      stroke="#26313d"
-      strokeWidth="3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
     />
-    <path d="M21 9h6" stroke="#26313d" strokeWidth="3" strokeLinecap="round" />
-    <circle cx="24" cy="38" r="2" fill="#26313d" />
+    <path d="M21 9h6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
   </svg>
 )

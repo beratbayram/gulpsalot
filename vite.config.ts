@@ -28,8 +28,8 @@ export default defineConfig({
           short_name: 'Pofik',
           description: 'Help Pofik catch flies with a springy tongue. Never lick a bee.',
           lang: 'en',
-          theme_color: '#78c6f0',
-          background_color: '#bfe6fb',
+          theme_color: '#1f3b2a',
+          background_color: '#13221a',
           display: 'fullscreen',
           display_override: ['fullscreen', 'standalone'],
           orientation: 'portrait',
@@ -39,6 +39,8 @@ export default defineConfig({
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+          // The UI is English: precache only Latin font subsets. Others still load on demand.
+          globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2'],
           cleanupOutdatedCaches: true,
         },
       }),
