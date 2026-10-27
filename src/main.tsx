@@ -8,12 +8,14 @@ import { App } from './app/App'
 import { useAppStore } from './app/store'
 import { audio } from './audio'
 import { loadGameFont } from './game/fonts'
+import { setLang } from './i18n'
 import { monetization } from './platform/monetization'
 import { storage } from './platform/storage'
 
 async function boot() {
   await storage.init()
   useAppStore.getState().hydrate()
+  setLang(useAppStore.getState().settings.lang)
   audio.install()
   await Promise.all([loadGameFont(), monetization.init()])
   createRoot(document.getElementById('root')!).render(

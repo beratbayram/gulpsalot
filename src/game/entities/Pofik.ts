@@ -1,8 +1,10 @@
-import { ColorMatrixFilter, Container, FillGradient, Graphics } from 'pixi.js'
+import { ColorMatrixFilter, Container, FillGradient, Graphics, GraphicsPath } from 'pixi.js'
 import { TAU, bump, clamp, lerp } from '../../lib/math'
 import { createNoise1D } from '../../lib/noise'
 import { Rng } from '../../lib/random'
 import { Spring, Spring2 } from '../../lib/spring'
+import { DEFAULT_LOOK, skinColors, type Look, type SkinColors } from '../cosmetics'
+import { HAT_ANCHOR, HAT_ART, HAT_OUTLINE, type HatArt } from '../draw/hats'
 import { PALETTE } from '../draw/palette'
 import type { TongueRoot } from './Tongue'
 
@@ -28,6 +30,7 @@ export class Pofik {
   private readonly body = new Graphics()
   private readonly belly = new Graphics()
   private readonly face = new Graphics()
+  private readonly hat = new Container()
   private readonly stars = new Container()
   private readonly starList: Graphics[] = []
   /** Blends Pofik towards red when stung. A plain tint would multiply green into brown. */
@@ -41,6 +44,8 @@ export class Pofik {
   private readonly look = new Spring2(0, 0, { freq: 5, damping: 0.62 })
   private readonly mouthOpen = new Spring(0, { freq: 9, damping: 0.75 })
   private readonly cheeks = new Spring(0, { freq: 5, damping: 0.45 })
+  /** The hat lags behind Pofik's moves and wobbles back. */
+  private readonly hatTilt = new Spring(0, { freq: 3.4, damping: 0.3 })
 
   private readonly rng = new Rng(3)
   private readonly idleNoise = createNoise1D(5)
@@ -59,6 +64,9 @@ export class Pofik {
   private lookX = 0
   private lookY = 0
   private hasLookTarget = false
+  private outfit: Look = DEFAULT_LOOK
+  private skin: SkinColors = skinColors(DEFAULT_LOOK.skin)
+  private skinGradient: FillGradient | null = null
 
   constructor() {
     this.drawShadow()
@@ -89,8 +97,25 @@ export class Pofik {
       1,
       0,
     ]
-    this.rig.addChild(this.body, this.belly, this.face)
+    this.hat.position.set(HAT_ANCHOR.x, HAT_ANCHOR.y)
+    this.rig.addChild(this.body, this.belly, this.face, this.hat)
     this.view.addChild(this.shadow, this.rig, this.stars)
+  }
+
+  /** Skin and hat. Redraws the body, so call it only when the look changes. */
+  setLook(look: Look) {
+    if (look.skin !== this.outfit.skin) {
+      this.skin = skinColors(look.skin)
+      this.drawBody()
+      this.drawBelly()
+    }
+    if (look.hat !== this.outfit.hat) {
+      this.hat.removeChildren().forEach((c) => c.destroy())
+      if (look.hat !== 'none') this.hat.addChild(drawHat(HAT_ART[look.hat]))
+      this.hatTilt.kick(4)
+      this.squash.kick(-2)
+    }
+    this.outfit = look
   }
 
   get isDead() {
@@ -146,6 +171,7 @@ export class Pofik {
   /** Tongue launch: stretch towards the shot and lean into it. */
   shoot(dirX: number) {
     this.squash.kick(2.6)
+    this.hatTilt.kick(-dirX * 2.2)
     this.lean.target = clamp(dirX * 0.28, -0.2, 0.2)
     this.lean.kick(dirX * 0.8)
     this.mouthOpen.target = 1
@@ -171,6 +197,7 @@ export class Pofik {
     this.squash.kick(4.2)
     this.hop.kick(-260)
     this.lean.kick(this.rng.sign() * 3)
+    this.hatTilt.kick(this.rng.sign() * 7)
   }
 
   boop() {
@@ -178,6 +205,7 @@ export class Pofik {
     this.squash.kick(-3.4)
     this.bellyBulge.kick(2.2)
     this.hop.kick(-90)
+    this.hatTilt.kick(this.rng.sign() * 3)
     this.blush = 1
   }
 
@@ -244,6 +272,8 @@ export class Pofik {
     this.look.step(dt)
     this.mouthOpen.step(dt)
     this.cheeks.step(dt)
+    this.hatTilt.target = -this.lean.value * 0.6 + (this.dead ? 0.25 : 0)
+    this.hatTilt.step(dt)
 
     // The pad is solid: hops bounce off it with a landing squash.
     if (this.hop.value > 0) {
@@ -271,6 +301,9 @@ export class Pofik {
     this.rig.scale.set(sx, sy)
     this.rig.rotation = this.lean.value
     this.rig.y = this.hop.value
+    // Hops lift the hat a little off the head.
+    this.hat.rotation = this.hatTilt.value
+    this.hat.y = HAT_ANCHOR.y + clamp(this.hop.velocity * 0.012, -6, 4)
     const bb = this.bellyBulge.value
     this.belly.scale.set(bb, 1 + (bb - 1) * 0.6)
 
@@ -346,7 +379,8 @@ export class Pofik {
   }
 
   private drawBody() {
-    const g = this.body
+    const g = this.body.clear()
+    const skin = this.skin
     const ink = PALETTE.ink
     const o = OUTLINE
 
@@ -362,35 +396,37 @@ export class Pofik {
       for (const tx of [-11, 0, 11]) g.circle(side * 30 + tx, -1, 4.5 + o - 1).fill(ink)
     }
 
-    const skin = new FillGradient({
+    this.skinGradient?.destroy()
+    const gradient = new FillGradient({
       type: 'linear',
       start: { x: 0, y: -142 },
       end: { x: 0, y: 0 },
       colorStops: [
-        { offset: 0, color: PALETTE.bodyLight },
-        { offset: 0.5, color: PALETTE.body },
-        { offset: 1, color: PALETTE.bodyShade },
+        { offset: 0, color: skin.bodyLight },
+        { offset: 0.5, color: skin.body },
+        { offset: 1, color: skin.bodyShade },
       ],
       textureSpace: 'global',
     })
-    g.ellipse(-58, -22, 30, 22).fill(PALETTE.bodyShade)
-    g.ellipse(58, -22, 30, 22).fill(PALETTE.bodyShade)
-    g.ellipse(0, -58, 76, 58).fill(skin)
-    g.circle(-EYE_X, EYE_Y + 2, 27).fill(skin)
-    g.circle(EYE_X, EYE_Y + 2, 27).fill(skin)
+    this.skinGradient = gradient
+    g.ellipse(-58, -22, 30, 22).fill(skin.bodyShade)
+    g.ellipse(58, -22, 30, 22).fill(skin.bodyShade)
+    g.ellipse(0, -58, 76, 58).fill(gradient)
+    g.circle(-EYE_X, EYE_Y + 2, 27).fill(gradient)
+    g.circle(EYE_X, EYE_Y + 2, 27).fill(gradient)
 
     // Spots and a soft highlight.
-    g.circle(-58, -60, 6).fill(PALETTE.bodySpot)
-    g.circle(-64, -42, 4).fill(PALETTE.bodySpot)
-    g.circle(60, -56, 5).fill(PALETTE.bodySpot)
-    g.circle(52, -82, 3.5).fill(PALETTE.bodySpot)
+    g.circle(-58, -60, 6).fill(skin.bodySpot)
+    g.circle(-64, -42, 4).fill(skin.bodySpot)
+    g.circle(60, -56, 5).fill(skin.bodySpot)
+    g.circle(52, -82, 3.5).fill(skin.bodySpot)
     g.ellipse(-40, -92, 15, 7).fill({ color: PALETTE.white, alpha: 0.3 })
 
     // Front feet with toes.
     for (const side of [-1, 1]) {
       const fx = side * 30
-      g.ellipse(fx, -5, 19, 9).fill(PALETTE.bodyShade)
-      for (const tx of [-11, 0, 11]) g.circle(fx + tx, -1, 4.5).fill(PALETTE.bodyShade)
+      g.ellipse(fx, -5, 19, 9).fill(skin.bodyShade)
+      for (const tx of [-11, 0, 11]) g.circle(fx + tx, -1, 4.5).fill(skin.bodyShade)
       g.moveTo(fx - 5.5, -4)
         .lineTo(fx - 5.5, 1)
         .moveTo(fx + 5.5, -4)
@@ -405,11 +441,11 @@ export class Pofik {
   }
 
   private drawBelly() {
-    const g = this.belly
-    g.ellipse(0, 0, 50, 31).fill(PALETTE.belly)
+    const g = this.belly.clear()
+    g.ellipse(0, 0, 50, 31).fill(this.skin.belly)
     g.moveTo(-26, 12).quadraticCurveTo(0, 20, 26, 12).stroke({
       width: 2,
-      color: PALETTE.bodyShade,
+      color: this.skin.bodyShade,
       alpha: 0.35,
       cap: 'round',
     })
@@ -474,7 +510,7 @@ export class Pofik {
           g.circle(px, py, PUPIL_R).fill(ink)
           g.circle(px - 3, py - 3.5, 2.8).fill(PALETTE.white)
           const lid = this.lidLevel()
-          if (lid > 0.02) drawLid(g, ex, ey, EYE_R + 1.5, lid)
+          if (lid > 0.02) drawLid(g, ex, ey, EYE_R + 1.5, lid, this.skin.body)
         }
       }
 
@@ -490,7 +526,7 @@ export class Pofik {
     if (puff > 0.03) {
       for (const side of [-1, 1]) {
         g.circle(side * 46, MOUTH_Y - 4, 5 + 10 * puff)
-          .fill(PALETTE.body)
+          .fill(this.skin.body)
           .stroke({ width: 3, color: ink })
       }
     }
@@ -525,7 +561,7 @@ export class Pofik {
 }
 
 /** Eyelid covering the top of an eye. `level` 0 = open, 1 = closed. */
-function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number) {
+function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number, color: number) {
   const s = clamp(-1 + 2 * level, -1, 1)
   const t0 = Math.asin(s)
   const edgeY = cy + r * s
@@ -533,7 +569,7 @@ function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number) 
   g.moveTo(cx - half, edgeY)
     .arc(cx, cy, r, Math.PI - t0, TAU + t0)
     .closePath()
-    .fill(PALETTE.body)
+    .fill(color)
   g.moveTo(cx - half, edgeY)
     .arc(cx, cy, r, Math.PI - t0, TAU + t0)
     .stroke({ width: 3, color: PALETTE.ink })
@@ -544,4 +580,30 @@ function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number) 
       color: PALETTE.ink,
       cap: 'round',
     })
+}
+
+/** Builds a hat from its shape data (see draw/hats.ts). */
+function drawHat(art: HatArt) {
+  const g = new Graphics()
+  const ink = PALETTE.ink
+  for (const shape of art.shapes) {
+    switch (shape.type) {
+      case 'path':
+        g.path(new GraphicsPath(shape.d))
+        if (shape.fill !== undefined) g.fill(shape.fill)
+        if (shape.line !== undefined)
+          g.stroke({ width: shape.width ?? 2, color: shape.line, cap: 'round', join: 'round' })
+        break
+      case 'circle':
+        g.circle(shape.x, shape.y, shape.r).fill(shape.fill)
+        break
+      case 'ellipse':
+        g.ellipse(shape.x, shape.y, shape.rx, shape.ry).fill(shape.fill)
+        break
+    }
+    if (shape.outline) g.stroke({ width: HAT_OUTLINE, color: ink, join: 'round' })
+  }
+  g.position.set(art.x, art.y)
+  g.rotation = art.rotation
+  return g
 }

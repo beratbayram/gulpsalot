@@ -18,7 +18,6 @@ export const CONFIG = {
   hunger: {
     max: 100,
     start: 100,
-    perFly: 14,
     sting: 28,
     /** Fraction of max where the "starving" warnings kick in. */
     critical: 0.25,
@@ -48,13 +47,31 @@ export const CONFIG = {
     segments: 14,
     /** Taps made while the tongue is busy are kept this long. */
     inputBuffer: 0.12,
+    /** Extra reach around a bee that still counts as a close call. */
+    closeCall: 26,
+  },
+
+  /** Score points and hunger refill for each kind of prey. */
+  prey: {
+    fly: { points: 1, food: 14 },
+    golden: { points: 5, food: 40 },
+    dragonfly: { points: 3, food: 20 },
+    firefly: { points: 2, food: 16 },
+  },
+
+  combo: {
+    /** Seconds to land the next catch. The clock only runs while the tongue is home. */
+    window: 2.4,
+    /** Chain length (insects caught in quick succession) needed for x2, x3, x4 and x5. */
+    steps: [2, 4, 7, 11] as const,
   },
 
   insects: {
-    flyHitRadius: 21,
-    beeHitRadius: 12,
-    flyLife: [6, 10] as const,
-    beeLife: [10, 16] as const,
+    fly: { hitRadius: 21, life: [6, 10] as const },
+    golden: { hitRadius: 19, life: [4, 6] as const },
+    dragonfly: { hitRadius: 17, life: [7, 10] as const },
+    firefly: { hitRadius: 21, life: [8, 12] as const },
+    bee: { hitRadius: 12, life: [10, 16] as const },
   },
 
   spawn: {
@@ -67,6 +84,29 @@ export const CONFIG = {
     maxBees: [1, 4] as const,
     flySpeed: [85, 150] as const,
     beeSpeed: [55, 88] as const,
+    /** A fly spawn turns golden with this chance (one golden fly at a time). */
+    golden: { start: 15, chance: [0.03, 0.045] as const, speed: 1.6 },
+    dragonfly: {
+      start: 25,
+      interval: [10, 5.5] as const,
+      max: [1, 2] as const,
+      speed: [165, 215] as const,
+    },
+    /** Fireflies only come out once the sky is this dark (see `sky`). */
+    firefly: {
+      minSky: 1.5,
+      interval: [3.2, 2.4] as const,
+      max: [2, 3] as const,
+      speed: [45, 60] as const,
+    },
+  },
+
+  /** Run time in seconds for each step of the day to dusk to night shift. */
+  sky: {
+    duskStart: 45,
+    duskEnd: 70,
+    nightStart: 85,
+    nightEnd: 110,
   },
 
   attract: {

@@ -75,6 +75,36 @@ export const AdIcon = (p: IconProps) => (
   </svg>
 )
 
+export const CalendarIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="5.5" width="16" height="14.5" rx="2.5" />
+    <path d="M4 10.5h16M8.5 3.5v4M15.5 3.5v4" />
+    <circle cx="12" cy="15.2" r="1.6" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const HangerIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M9.8 6.6a2.2 2.2 0 1 1 3.3 1.9c-.8.5-1.1.9-1.1 1.6v.6" />
+    <path d="M12 10.7 3.7 16.4c-.9.6-.5 1.9.6 1.9h15.4c1.1 0 1.5-1.3.6-1.9z" />
+  </svg>
+)
+
+export const TrophyIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M8 4.5h8v5a4 4 0 0 1-8 0z" fill="currentColor" />
+    <path d="M8 6.5H5.5a2.6 2.6 0 0 0 2.8 3.6M16 6.5h2.5a2.6 2.6 0 0 1-2.8 3.6" />
+    <path d="M12 13.6v3.4M8.5 19.5h7M9.8 17h4.4" />
+  </svg>
+)
+
+export const LockIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2" fill="currentColor" />
+    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+  </svg>
+)
+
 export const CloseIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />

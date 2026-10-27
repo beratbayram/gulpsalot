@@ -11,9 +11,14 @@ export function mulberry32(seed: number) {
 }
 
 export class Rng {
-  private readonly next: () => number
+  private next: () => number
 
   constructor(seed = Date.now()) {
+    this.next = mulberry32(seed)
+  }
+
+  /** Restarts the sequence from a new seed. */
+  reseed(seed: number) {
     this.next = mulberry32(seed)
   }
 

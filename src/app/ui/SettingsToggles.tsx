@@ -1,17 +1,20 @@
 import { sfx } from '../../audio'
+import { nextLang } from '../../i18n'
 import { haptics } from '../../platform/haptics'
 import { useAppStore } from '../store'
+import { useT } from '../useT'
 import { IconButton } from './Button'
 import { SoundOffIcon, SoundOnIcon, VibrateIcon, VibrateOffIcon } from './icons'
 
 export function SettingsToggles() {
   const settings = useAppStore((s) => s.settings)
   const setSetting = useAppStore((s) => s.setSetting)
+  const t = useT()
 
   return (
     <div className="toggles">
       <IconButton
-        label={settings.sound ? 'Mute sound' : 'Turn sound on'}
+        label={settings.sound ? t('settings.soundOff') : t('settings.soundOn')}
         pressed={settings.sound}
         sound="none"
         onPress={() => {
@@ -25,7 +28,7 @@ export function SettingsToggles() {
       </IconButton>
       {haptics.supported && (
         <IconButton
-          label={settings.haptics ? 'Turn vibration off' : 'Turn vibration on'}
+          label={settings.haptics ? t('settings.vibrationOff') : t('settings.vibrationOn')}
           pressed={settings.haptics}
           sound="none"
           onPress={() => {
@@ -39,6 +42,12 @@ export function SettingsToggles() {
           {settings.haptics ? <VibrateIcon /> : <VibrateOffIcon />}
         </IconButton>
       )}
+      <IconButton
+        label={t('settings.language')}
+        onPress={() => setSetting('lang', nextLang(settings.lang))}
+      >
+        <span className="icon-btn__text">{settings.lang.toUpperCase()}</span>
+      </IconButton>
     </div>
   )
 }

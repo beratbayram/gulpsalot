@@ -7,8 +7,10 @@ import * as actions from '../actions'
 import { useGame } from '../gameContext'
 import { bouncy, popUp, stagger } from '../motion'
 import { useAppStore } from '../store'
+import { useT } from '../useT'
 import { Button, IconButton } from '../ui/Button'
-import { AdIcon, FlyIcon, HomeIcon, RestartIcon } from '../ui/icons'
+import { AdIcon, CalendarIcon, FlyIcon, HangerIcon, HomeIcon, RestartIcon } from '../ui/icons'
+import { PofikFace } from '../ui/PofikFace'
 
 const COUNT_DELAY = 450
 const COUNT_DURATION = 750
@@ -38,6 +40,8 @@ const SPARKS = Array.from({ length: 10 }, (_, i) => {
 export function GameOverScreen() {
   const game = useGame()
   const run = useAppStore((s) => s.lastRun)
+  const skin = useAppStore((s) => s.look.skin)
+  const t = useT()
   const shown = useCountUp(run?.score ?? 0)
   const counted = run ? shown >= run.score : false
   const [busy, setBusy] = useState(false)
@@ -52,7 +56,8 @@ export function GameOverScreen() {
 
   if (!run) return null
   const canContinue = run.canContinue && monetization.canShowRewarded('continue')
-  const title = run.cause === 'stung' ? 'Ouch, a bee!' : "Tummy's empty!"
+  const title = run.cause === 'stung' ? t('over.stung') : t('over.starved')
+  const daily = run.mode === 'daily'
 
   const onContinue = async () => {
     if (!game || busy) return
@@ -94,7 +99,13 @@ export function GameOverScreen() {
           </m.h2>
 
           <m.div className="result" variants={popUp}>
-            <span className="result__label">Flies eaten</span>
+            {daily && (
+              <span className="result__mode">
+                <CalendarIcon />
+                {t('title.daily')}
+              </span>
+            )}
+            <span className="result__label">{t('over.score')}</span>
             <span className="result__value">
               <FlyIcon className="result__icon" />
               {shown}
@@ -106,7 +117,7 @@ export function GameOverScreen() {
                   initial={{ scale: 0, rotate: -30 }}
                   animate={{ scale: 1, rotate: -8, transition: bouncy }}
                 >
-                  New best!
+                  {t('over.newBest')}
                   {SPARKS.map((s, i) => (
                     <i
                       key={i}
@@ -123,12 +134,37 @@ export function GameOverScreen() {
                 </m.div>
               )}
             </AnimatePresence>
-            {!run.isBest && run.best > 0 && <span className="result__best">Best {run.best}</span>}
+            {daily ? (
+              <span className="result__best">{t('over.dailyBest', { n: run.dailyBest })}</span>
+            ) : (
+              !run.isBest &&
+              run.best > 0 && (
+                <span className="result__best">{t('over.best', { n: run.best })}</span>
+              )
+            )}
           </m.div>
+
+          {run.unlocks.length > 0 && (
+            <m.div className="unlocks" variants={popUp}>
+              <span className="unlocks__title">{t('over.unlocked')}</span>
+              <div className="unlocks__items">
+                {run.unlocks.map((u) => (
+                  <span key={`${u.type}-${u.id}`} className="unlock">
+                    <PofikFace
+                      className="unlock__face"
+                      skin={u.type === 'skin' ? u.id : skin}
+                      hat={u.type === 'hat' ? u.id : 'none'}
+                    />
+                    {u.type === 'skin' ? t(`skin.${u.id}`) : t(`hat.${u.id}`)}
+                  </span>
+                ))}
+              </div>
+            </m.div>
+          )}
 
           <m.div className="card__actions" variants={popUp}>
             <Button size="lg" icon={<RestartIcon />} onPress={onAgain} disabled={busy}>
-              Play again
+              {t('over.again')}
             </Button>
             {canContinue && (
               <Button
@@ -136,17 +172,31 @@ export function GameOverScreen() {
                 icon={<AdIcon />}
                 onPress={onContinue}
                 disabled={busy}
-                badge="AD"
+                badge={t('over.ad')}
               >
-                Continue
+                {t('over.continue')}
               </Button>
             )}
           </m.div>
 
-          <m.div variants={popUp}>
-            <IconButton label="Home" sound="back" onPress={() => game && actions.home(game)}>
+          <m.div className="card__row" variants={popUp}>
+            <IconButton
+              label={t('common.home')}
+              sound="back"
+              onPress={() => game && actions.home(game)}
+            >
               <HomeIcon />
             </IconButton>
+            {run.unlocks.length > 0 && (
+              <Button
+                variant="secondary"
+                icon={<HangerIcon />}
+                onPress={() => game && actions.openWardrobe(game)}
+                disabled={busy}
+              >
+                {t('over.tryOn')}
+              </Button>
+            )}
           </m.div>
         </m.div>
       </m.section>

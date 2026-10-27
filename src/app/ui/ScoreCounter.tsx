@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useHudStore } from '../hudStore'
+import { useT } from '../useT'
 import { FlyIcon } from './icons'
 
 export function ScoreCounter() {
   const score = useHudStore((s) => s.score)
   const ref = useRef<HTMLDivElement>(null)
+  const t = useT()
 
   useEffect(() => {
     if (score === 0) return
@@ -20,7 +22,7 @@ export function ScoreCounter() {
   }, [score])
 
   return (
-    <div ref={ref} className="score" aria-label={`Flies eaten: ${score}`}>
+    <div ref={ref} className="score" aria-label={t('hud.score', { n: score })}>
       <FlyIcon className="score__icon" />
       <span>{score}</span>
     </div>

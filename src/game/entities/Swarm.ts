@@ -1,54 +1,73 @@
 import { Container } from 'pixi.js'
+import { lerp } from '../../lib/math'
 import type { Rng } from '../../lib/random'
 import { CONFIG } from '../config'
+import type { Difficulty } from '../rules'
 import { Insect, type InsectKind, type Zone } from './Insect'
 
-export interface SpawnRules {
-  flyInterval: number
-  maxFlies: number
-  beeInterval: number
-  maxBees: number
-  beesActive: boolean
-  flySpeed: number
-  beeSpeed: number
-}
+const TIMED = ['fly', 'bee', 'dragonfly', 'firefly'] as const
+type TimedKind = (typeof TIMED)[number]
+
+/** Matches one kind, every prey kind, or anything (null). */
+export type InsectFilter = InsectKind | 'prey' | null
+
+const matches = (it: Insect, filter: InsectFilter) =>
+  filter === null || (filter === 'prey' ? it.isPrey : it.kind === filter)
 
 /** Owns every insect: spawning, pooling, updating and lookups. */
 export class Swarm {
   readonly layer = new Container()
   readonly list: Insect[] = []
-  private readonly pool: Record<InsectKind, Insect[]> = { fly: [], bee: [] }
-  private flyTimer = 0
-  private beeTimer = 0
+  /** Called for every new insect, e.g. to play an entrance sound. */
+  onSpawn: ((it: Insect) => void) | null = null
+  private readonly pool: Record<InsectKind, Insect[]> = {
+    fly: [],
+    golden: [],
+    dragonfly: [],
+    firefly: [],
+    bee: [],
+  }
+  private readonly timers: Record<TimedKind, number> = { fly: 0, bee: 0, dragonfly: 0, firefly: 0 }
   private readonly rng: Rng
+  private ambient = 0xffffff
 
   constructor(rng: Rng) {
     this.rng = rng
   }
 
   reset(firstFly: number) {
-    this.flyTimer = firstFly
-    this.beeTimer = 0
+    for (const kind of TIMED) this.timers[kind] = 0
+    this.timers.fly = firstFly
   }
 
-  spawnTick(dt: number, rules: SpawnRules, zone: Zone) {
-    this.flyTimer -= dt
-    if (this.flyTimer <= 0) {
-      if (this.count('fly') < rules.maxFlies) this.spawn('fly', rules.flySpeed, zone)
-      this.flyTimer = rules.flyInterval * this.rng.range(0.75, 1.25)
-    }
-    if (!rules.beesActive) return
-    this.beeTimer -= dt
-    if (this.beeTimer <= 0) {
-      if (this.count('bee') < rules.maxBees) this.spawn('bee', rules.beeSpeed, zone)
-      this.beeTimer = rules.beeInterval * this.rng.range(0.75, 1.25)
+  /**
+   * Every spawn attempt draws the same random numbers whether or not it is
+   * capped, so a seeded run spawns the same insects for every player.
+   */
+  spawnTick(dt: number, rules: Difficulty, zone: Zone) {
+    for (const kind of TIMED) {
+      const rule = rules[kind]
+      if (!rule.active) continue
+      this.timers[kind] -= dt
+      if (this.timers[kind] > 0) continue
+      this.timers[kind] = rule.interval * this.rng.range(0.75, 1.25)
+      const roll = this.rng.float()
+      const seed = this.rng.int(1, 0x7fffffff)
+      const speed = this.rng.range(0.85, 1.15)
+      const life = this.rng.float()
+
+      if (kind === 'fly' && roll < rules.goldenChance && this.count('golden') === 0) {
+        this.spawn('golden', seed, zone, rules.goldenSpeed * speed, life)
+      } else if (this.count(kind) < rule.max) {
+        this.spawn(kind, seed, zone, rule.speed * speed, life)
+      }
     }
   }
 
   update(dt: number, zone: Zone) {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const it = this.list[i]
-      it.update(dt, this.rng, zone)
+      it.update(dt, zone)
       if (it.state === 'gone') {
         this.list.splice(i, 1)
         this.layer.removeChild(it.view)
@@ -61,6 +80,12 @@ export class Swarm {
     for (const it of this.list) it.sync()
   }
 
+  setAmbient(color: number) {
+    if (color === this.ambient) return
+    this.ambient = color
+    for (const it of this.list) it.setAmbient(color)
+  }
+
   /** Active insects of a kind that still count against the spawn cap. */
   count(kind: InsectKind) {
     let n = 0
@@ -69,11 +94,11 @@ export class Swarm {
     return n
   }
 
-  nearestFree(kind: InsectKind | null, x: number, y: number, inside?: Zone) {
+  nearestFree(filter: InsectFilter, x: number, y: number, inside?: Zone) {
     let best: Insect | null = null
     let bestD = Infinity
     for (const it of this.list) {
-      if (!it.free || (kind && it.kind !== kind)) continue
+      if (!it.free || !matches(it, filter)) continue
       if (inside && (it.x < inside.left - 10 || it.x > inside.right + 10 || it.y < inside.top - 10))
         continue
       const d = (it.x - x) ** 2 + (it.y - y) ** 2
@@ -86,16 +111,18 @@ export class Swarm {
   }
 
   /** Sends everything away, used when a run ends or restarts. */
-  scatter(zone: Zone, kind?: InsectKind) {
-    for (const it of this.list) if (!kind || it.kind === kind) it.leave(zone)
+  scatter(zone: Zone, filter: InsectFilter = null) {
+    for (const it of this.list) if (matches(it, filter)) it.leave(zone)
   }
 
-  private spawn(kind: InsectKind, speed: number, zone: Zone) {
+  private spawn(kind: InsectKind, seed: number, zone: Zone, speed: number, life01: number) {
     const it = this.pool[kind].pop() ?? new Insect(kind)
-    const [minLife, maxLife] = kind === 'fly' ? CONFIG.insects.flyLife : CONFIG.insects.beeLife
-    it.spawn(this.rng, zone, speed * this.rng.range(0.85, 1.15), this.rng.range(minLife, maxLife))
+    const [minLife, maxLife] = CONFIG.insects[kind].life
+    it.setAmbient(this.ambient)
+    it.spawn(seed, zone, speed, lerp(minLife, maxLife, life01))
     this.list.push(it)
     this.layer.addChild(it.view)
+    this.onSpawn?.(it)
     return it
   }
 }

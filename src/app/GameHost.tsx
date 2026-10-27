@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { audio, buzz, sfx } from '../audio'
 import { Game } from '../game/Game'
+import { setLang } from '../i18n'
 import { haptics } from '../platform/haptics'
 import { landscapePhoneQuery, prefersReducedMotion, watchVisibility } from '../platform/lifecycle'
 import { monetization } from '../platform/monetization'
@@ -14,7 +15,8 @@ function readOptions() {
   return {
     debug: params.has('debug'),
     timeScale: Number(params.get('slow')) || 1,
-    seed: Number(params.get('seed')) || Math.floor(Math.random() * 1e6),
+    seed: params.has('seed') ? Number(params.get('seed')) || 0 : null,
+    startTime: Math.max(0, Number(params.get('time')) || 0),
   }
 }
 
@@ -23,6 +25,7 @@ export function GameHost({ children }: { children: ReactNode }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [game, setGame] = useState<Game | null>(null)
   const settings = useAppStore((s) => s.settings)
+  const look = useAppStore((s) => s.look)
 
   useEffect(() => {
     const host = hostRef.current
@@ -39,6 +42,10 @@ export function GameHost({ children }: { children: ReactNode }) {
       hints: {
         isDone: (kind) => useAppStore.getState().hints[kind],
         markDone: (kind) => useAppStore.getState().markHint(kind),
+      },
+      achievements: {
+        has: (id) => useAppStore.getState().achievements.includes(id),
+        unlock: (id) => useAppStore.getState().unlockAchievement(id),
       },
       reducedMotion: prefersReducedMotion(),
       ...options,
@@ -63,7 +70,12 @@ export function GameHost({ children }: { children: ReactNode }) {
   useEffect(() => {
     audio.setMuted(!settings.sound)
     haptics.setEnabled(settings.haptics)
+    setLang(settings.lang)
   }, [settings])
+
+  useEffect(() => {
+    game?.setLook(look)
+  }, [game, look])
 
   useEffect(() => {
     if (!game) return

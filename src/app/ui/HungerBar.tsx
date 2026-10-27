@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../gameContext'
 import { useHudStore } from '../hudStore'
+import { useAppStore } from '../store'
+import { useT } from '../useT'
 import { PofikFace } from './PofikFace'
 
 const GOOD = [139, 214, 90]
@@ -21,6 +23,8 @@ function hungerColor(h: number) {
 export function HungerBar() {
   const ref = useRef<HTMLDivElement>(null)
   const game = useGame()
+  const skin = useAppStore((s) => s.look.skin)
+  const t = useT()
   const [worried, setWorried] = useState(false)
 
   useEffect(() => {
@@ -92,11 +96,11 @@ export function HungerBar() {
       ref={ref}
       className="hunger"
       role="meter"
-      aria-label="Hunger"
+      aria-label={t('hud.hunger')}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <PofikFace className="hunger__face" mood={worried ? 'worried' : 'happy'} />
+      <PofikFace className="hunger__face" mood={worried ? 'worried' : 'happy'} skin={skin} />
       <div className="hunger__track">
         <div className="hunger__trail" />
         <div className="hunger__fill" />

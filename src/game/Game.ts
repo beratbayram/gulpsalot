@@ -1,14 +1,17 @@
 import { Application, Container, type Ticker } from 'pixi.js'
+import * as i18n from '../i18n'
 import { TAU, clamp, sweptHit } from '../lib/math'
 import { Rng } from '../lib/random'
+import type { AchievementId } from './achievements'
 import { Pond } from './background/Pond'
 import { StepClock } from './clock'
 import { CONFIG } from './config'
+import type { Look } from './cosmetics'
 import { PALETTE } from './draw/palette'
 import { Emitter } from './emitter'
 import type { Insect, Zone } from './entities/Insect'
 import { Pofik } from './entities/Pofik'
-import { Swarm, type SpawnRules } from './entities/Swarm'
+import { Swarm, type InsectFilter } from './entities/Swarm'
 import { Tongue, type TongueRoot } from './entities/Tongue'
 import { DebugOverlay } from './fx/DebugOverlay'
 import { FloatingText } from './fx/FloatingText'
@@ -18,6 +21,7 @@ import { ScreenShake } from './fx/ScreenShake'
 import { Vignette } from './fx/Vignette'
 import { computeLayout, toWorld, type Layout } from './layout'
 import * as rules from './rules'
+import type { Difficulty, PreyKind } from './rules'
 
 export type GameMode = 'attract' | 'playing' | 'paused' | 'dying' | 'over'
 export type DeathCause = 'starved' | 'stung'
@@ -39,6 +43,12 @@ export interface SoundSink {
   gameOver(): void
   revive(): void
   start(): void
+  goldenAppear(pan: number): void
+  twinkle(pan: number): void
+  goldenCatch(): void
+  catchSpecial(kind: 'dragonfly' | 'firefly'): void
+  combo(level: number): void
+  closeCall(): void
 }
 
 export interface BuzzSource {
@@ -60,28 +70,63 @@ export interface HapticsSink {
   heavy(): void
 }
 
+export interface HudFrame {
+  /** 0..1 */
+  hunger: number
+  score: number
+  critical: boolean
+  /** Current combo multiplier, 1 when there is no combo. */
+  combo: number
+}
+
 export interface GameOptions {
   sound: SoundSink
   buzz: BuzzSink
   haptics: HapticsSink
   /** Receives HUD values; called only when something changed. */
-  hud: (hunger01: number, score: number, critical: boolean) => void
+  hud: (frame: HudFrame) => void
   hints: { isDone(kind: HintKind): boolean; markDone(kind: HintKind): void }
+  achievements: { has(id: AchievementId): boolean; unlock(id: AchievementId): void }
   reducedMotion: boolean
   debug: boolean
   timeScale: number
-  seed: number
+  /** Seed for every run (`?seed`), or null for a fresh one each time. */
+  seed: number | null
+  /** Run time every run starts at (`?time`), to test later stages quickly. */
+  startTime: number
 }
 
-const ATTRACT_RULES: SpawnRules = {
-  flyInterval: CONFIG.attract.flyInterval,
-  maxFlies: CONFIG.attract.maxFlies,
-  beeInterval: 99,
-  maxBees: 0,
-  beesActive: false,
-  flySpeed: 75,
-  beeSpeed: 0,
+export interface RunOptions {
+  /** Seeded runs spawn the same insects for every player (the daily challenge). */
+  seed?: number
+  canContinue?: boolean
 }
+
+const OFF = { active: false, interval: 99, max: 0, speed: 0 }
+
+const ATTRACT_RULES: Difficulty = {
+  fly: {
+    active: true,
+    interval: CONFIG.attract.flyInterval,
+    max: CONFIG.attract.maxFlies,
+    speed: 75,
+  },
+  bee: OFF,
+  dragonfly: OFF,
+  firefly: OFF,
+  goldenChance: 0,
+  goldenSpeed: 0,
+}
+
+/** Popup colors by combo multiplier. */
+const COMBO_COLORS = [
+  PALETTE.white,
+  PALETTE.white,
+  PALETTE.star,
+  0xffa53d,
+  PALETTE.tongue,
+  0xb48cff,
+]
 
 /**
  * Owns the Pixi app, the simulation loop and the run state. React talks to it
@@ -93,7 +138,10 @@ export class Game {
 
   private readonly app: Application
   private readonly opts: GameOptions
-  private readonly rng: Rng
+  /** Effects and attract mode. Never seeded, so it can't disturb seeded spawns. */
+  private readonly fxRng = new Rng()
+  /** Insect spawns only. Reseeded at the start of every run. */
+  private readonly spawnRng = new Rng()
   private readonly clock = new StepClock()
   private readonly root = new Container()
   private readonly camera = new Container()
@@ -118,6 +166,17 @@ export class Game {
   private stun = 0
   private invulnerable = 0
   private continued = false
+  private canContinue = true
+  /** Insects caught in quick succession; drives the combo multiplier. */
+  private chain = 0
+  private comboTimer = 0
+  /** Insects caught since the last miss or sting. */
+  private streak = 0
+  /** The current shot passed close to a bee without touching it. */
+  private nearBee = false
+  private boops = 0
+  private lastBoop = -10
+  private twinkleTimer = 0
   private dyingTimer = 0
   private slumpDelay = 0
   private deathCause: DeathCause = 'starved'
@@ -128,7 +187,7 @@ export class Game {
   private pendingTap: { x: number; y: number; t: number } | null = null
   /** Where the tongue starts: the resting tongue in Pofik's mouth. */
   private readonly mouth: TongueRoot = { x: 0, y: 0, rx: 1, ry: 1, rot: 0 }
-  private hudLast = { h: -1, s: -1, c: false }
+  private hudLast = { h: -1, s: -1, c: false, m: 1 }
   private destroyed = false
 
   static async create(host: HTMLElement, opts: GameOptions) {
@@ -149,9 +208,9 @@ export class Game {
   private constructor(app: Application, host: HTMLElement, opts: GameOptions) {
     this.app = app
     this.opts = opts
-    this.rng = new Rng(opts.seed)
-    this.swarm = new Swarm(this.rng)
-    this.particles = new Particles(app.renderer, this.rng)
+    this.swarm = new Swarm(this.spawnRng)
+    this.swarm.onSpawn = this.onSpawn
+    this.particles = new Particles(app.renderer, this.fxRng)
     this.clock.timeScale = opts.timeScale
     this.shake.intensity = opts.reducedMotion ? CONFIG.fx.reducedMotionShake : 1
 
@@ -189,19 +248,24 @@ export class Game {
 
   // Commands ------------------------------------------------------------------
 
-  startRun() {
+  startRun({ seed, canContinue = true }: RunOptions = {}) {
     this.mode = 'playing'
-    this.runTime = 0
+    this.spawnRng.reseed(seed ?? this.opts.seed ?? this.fxRng.int(1, 0x7fffffff))
+    this.runTime = this.opts.startTime
     this.hunger = CONFIG.hunger.start
     this.score = 0
     this.stun = 0
     this.invulnerable = 0
     this.continued = false
+    this.canContinue = canContinue
+    this.streak = 0
+    this.resetCombo()
     this.growlTimer = 0
     this.beeHintTime = 0
     this.pendingTap = null
     this.tongue.scored = false
-    this.swarm.scatter(this.zone, 'bee')
+    // A clean sky, so the insects that count are the same for everyone on a seeded run.
+    this.swarm.scatter(this.zone)
     this.swarm.reset(CONFIG.spawn.firstFly)
     this.pofik.revive()
     this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 6, 1)
@@ -227,11 +291,12 @@ export class Game {
   }
 
   continueRun() {
-    if (this.mode !== 'over' || this.continued) return
+    if (this.mode !== 'over' || this.continued || !this.canContinue) return
     this.continued = true
     this.mode = 'playing'
     this.hunger = rules.revive(this.hunger)
     this.stun = 0
+    this.resetCombo()
     this.invulnerable = CONFIG.invulnerableAfterContinue
     this.pofik.revive()
     this.pofik.setInvulnerable(this.invulnerable)
@@ -258,6 +323,7 @@ export class Game {
     this.mode = 'attract'
     this.stun = 0
     this.invulnerable = 0
+    this.resetCombo()
     this.pendingTap = null
     this.autoShotTimer = 2
     this.swarm.scatter(this.zone, 'bee')
@@ -266,6 +332,10 @@ export class Game {
     this.hints.hide()
     this.ensureRunning()
     this.pushHud(true)
+  }
+
+  setLook(look: Look) {
+    this.pofik.setLook(look)
   }
 
   destroy() {
@@ -283,8 +353,11 @@ export class Game {
   snapshot() {
     return {
       mode: this.mode,
+      runTime: this.runTime,
       hunger: this.hunger,
       score: this.score,
+      combo: rules.comboMultiplier(this.chain),
+      streak: this.streak,
       stun: this.stun,
       tongue: this.tongue.state,
       layout: this.layout,
@@ -347,6 +420,10 @@ export class Game {
     this.camera.position.set(W / 2 + this.shake.x, H / 2 + this.shake.y)
     this.camera.rotation = this.shake.angle
     this.vignette.update(dt)
+    const ambient = this.pond.ambient
+    this.pofik.view.tint = ambient
+    this.tongue.view.tint = ambient
+    this.swarm.setAmbient(ambient)
     this.pofik.render()
     this.pofik.tongueRoot(this.mouth)
     this.tongue.render(this.mouth)
@@ -359,6 +436,7 @@ export class Game {
 
   private step = (dt: number) => {
     this.time += dt
+    this.pond.setSky(this.mode === 'attract' ? 0 : rules.skyPhase(this.runTime))
     this.pond.update(dt)
     this.pofik.setSeat(this.layout.worldW / 2, this.layout.padY - 6 + this.pond.padBob)
 
@@ -374,6 +452,7 @@ export class Game {
     if (home) this.onTongueHome()
 
     this.swarm.update(dt, this.zone)
+    this.updateSparkles(dt)
     this.updateLook()
     this.pofik.update(dt)
     this.particles.update(dt)
@@ -385,6 +464,12 @@ export class Game {
     this.runTime += dt
     if (this.stun > 0) this.stun -= dt
     if (this.invulnerable > 0) this.invulnerable -= dt
+    // The combo clock waits while the tongue is out, so a catch in flight still counts.
+    if (this.comboTimer > 0 && !this.tongue.busy) {
+      this.comboTimer -= dt
+      if (this.comboTimer <= 0) this.chain = 0
+    }
+    if (this.runTime >= 120) this.achieve('survive2m')
 
     this.hunger = rules.drainHunger(this.hunger, dt, this.runTime)
     this.pofik.setHunger(this.hunger / CONFIG.hunger.max)
@@ -418,8 +503,8 @@ export class Game {
     this.swarm.spawnTick(dt, ATTRACT_RULES, this.zone)
     this.autoShotTimer -= dt
     if (this.autoShotTimer <= 0 && !this.tongue.busy) {
-      this.autoShotTimer = this.rng.range(CONFIG.attract.autoShot[0], CONFIG.attract.autoShot[1])
-      const fly = this.swarm.nearestFree('fly', this.mouth.x, this.mouth.y, this.zone)
+      this.autoShotTimer = this.fxRng.range(CONFIG.attract.autoShot[0], CONFIG.attract.autoShot[1])
+      const fly = this.swarm.nearestFree('prey', this.mouth.x, this.mouth.y, this.zone)
       if (fly) {
         const aim = Tongue.aim(
           this.mouth.x,
@@ -444,7 +529,7 @@ export class Game {
       this.events.emit('runOver', {
         score: this.score,
         cause: this.deathCause,
-        canContinue: !this.continued,
+        canContinue: this.canContinue && !this.continued,
       })
     }
   }
@@ -458,6 +543,9 @@ export class Game {
     const p = toWorld(this.layout, e.clientX - rect.left, e.clientY - rect.top)
     if (this.pofik.containsPoint(p.x, p.y)) {
       if (this.stun > 0 || this.pofik.isDead) return
+      this.boops = this.time - this.lastBoop < 1.2 ? this.boops + 1 : 1
+      this.lastBoop = this.time
+      if (this.boops >= 10) this.achieve('boop')
       this.pofik.boop()
       this.opts.sound.boop()
       this.opts.haptics.light()
@@ -499,22 +587,31 @@ export class Game {
     this.pofik.shoot((tx - this.mouth.x) / d)
     this.opts.sound.shoot()
     this.stickCount = 0
+    this.nearBee = false
   }
 
   private checkHits() {
     const t = this.tongue
     if (!t.busy) return
     const r = CONFIG.tongue.tipRadius
+    const hit = (it: Insect, reach: number) =>
+      sweptHit(t.prevTipX, t.prevTipY, t.tipX, t.tipY, it.x, it.y, reach)
     for (const it of this.swarm.list) {
       if (!it.free) continue
-      if (!sweptHit(t.prevTipX, t.prevTipY, t.tipX, t.tipY, it.x, it.y, r + it.hitR)) continue
-      if (it.kind === 'fly') this.onStick(it)
-      else if (!t.stung && it.safeUntil <= this.time && this.invulnerable <= 0) this.onSting(it)
+      const reach = r + it.hitR
+      if (it.isPrey) {
+        if (hit(it, reach)) this.onStick(it)
+        continue
+      }
+      const touching = hit(it, reach)
+      if (touching && !t.stung && it.safeUntil <= this.time && this.invulnerable <= 0)
+        this.onSting(it)
+      else if (!touching && hit(it, reach + CONFIG.tongue.closeCall)) this.nearBee = true
     }
   }
 
   private onStick(fly: Insect) {
-    fly.catchOn(this.tongue.tipX, this.tongue.tipY, this.rng)
+    fly.catchOn(this.tongue.tipX, this.tongue.tipY)
     this.tongue.attached.push(fly)
     this.stickCount++
     this.opts.sound.stick(this.stickCount)
@@ -528,6 +625,7 @@ export class Game {
       size: [4, 8],
       drag: 6,
     })
+    if (fly.kind === 'golden') this.goldBurst(fly.x, fly.y, 10)
     this.clock.hitStopFor(CONFIG.fx.hitStopCatch)
     this.shake.add(CONFIG.fx.catchTrauma)
   }
@@ -549,7 +647,7 @@ export class Game {
       spin: 8,
     })
     this.particles.ring(t.tipX, t.tipY, PALETTE.sting, 12, 80, 0.35)
-    this.floaters.show('Ouch!', t.tipX, t.tipY - 16, PALETTE.sting, 30)
+    this.floaters.show(i18n.t('game.ouch'), t.tipX, t.tipY - 16, PALETTE.sting, 30)
     this.clock.hitStopFor(CONFIG.fx.hitStopSting)
     this.shake.add(CONFIG.fx.stingTrauma)
     this.vignette.flash()
@@ -561,6 +659,8 @@ export class Game {
     if (this.mode !== 'playing') return
     this.hunger = rules.sting(this.hunger)
     this.stun = CONFIG.stun
+    this.resetCombo()
+    this.streak = 0
     this.pendingTap = null
     this.events.emit('stung', { hunger: this.hunger })
     if (rules.isStarved(this.hunger)) this.die('stung')
@@ -569,12 +669,22 @@ export class Game {
   private onTongueHome() {
     const t = this.tongue
     const n = t.attached.length
+    const scored = t.scored && this.mode === 'playing'
     this.pofik.tongueHome()
     if (n === 0) {
       this.opts.sound.retract()
+      // A miss ends the combo and the streak.
+      if (scored) {
+        this.resetCombo()
+        this.streak = 0
+      }
       return
     }
-    for (const it of t.attached) it.swallow()
+    const kinds: PreyKind[] = []
+    for (const it of t.attached) {
+      if (it.kind !== 'bee') kinds.push(it.kind)
+      it.swallow()
+    }
     t.attached.length = 0
 
     this.pofik.gulp(n)
@@ -596,12 +706,108 @@ export class Game {
     this.particles.ring(this.mouth.x, this.mouth.y, PALETTE.white, 14, 66, 0.32, 0.8)
     this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 8, 0.9)
 
-    if (!t.scored || this.mode !== 'playing') return
-    this.score += n
-    this.hunger = rules.feed(this.hunger, n)
-    this.floaters.show(`+${n}`, this.mouth.x, this.mouth.y - 112, PALETTE.white, n > 1 ? 40 : 34)
+    if (scored) this.scoreCatch(kinds)
+  }
+
+  private scoreCatch(kinds: PreyKind[]) {
+    const n = kinds.length
+    const { points, food } = rules.preyValue(kinds)
+    const before = rules.comboMultiplier(this.chain)
+    this.chain += n
+    this.comboTimer = CONFIG.combo.window
+    const multiplier = rules.comboMultiplier(this.chain)
+    const gained = points * multiplier
+    this.score += gained
+    this.hunger = rules.feed(this.hunger, food)
+    this.streak += n
+
+    const { x, y } = this.mouth
+    const golden = kinds.includes('golden')
+    const size = golden || gained >= 5 ? 44 : gained > 1 ? 40 : 34
+    this.floaters.show(`+${gained}`, x, y - 112, golden ? PALETTE.gold : PALETTE.white, size)
+    if (golden) {
+      this.opts.sound.goldenCatch()
+      this.goldBurst(x, y - 20, 22)
+    } else if (kinds.includes('dragonfly')) this.opts.sound.catchSpecial('dragonfly')
+    else if (kinds.includes('firefly')) this.opts.sound.catchSpecial('firefly')
+    if (multiplier > before) this.onComboUp(multiplier)
+    if (this.nearBee && !this.tongue.stung) this.onCloseCall()
+
     this.opts.hints.markDone('tapFly')
     this.events.emit('caught', { count: n, score: this.score })
+
+    if (golden) this.achieve('golden')
+    if (kinds.includes('dragonfly')) this.achieve('dragonfly')
+    if (kinds.includes('firefly')) this.achieve('firefly')
+    if (n >= 3) this.achieve('multi3')
+    if (multiplier >= 5) this.achieve('combo5')
+    if (this.streak >= 10) this.achieve('streak10')
+    if (this.score >= 100) this.achieve('score100')
+  }
+
+  /** Bigger, brighter popups and a higher note for every combo level. */
+  private onComboUp(multiplier: number) {
+    const { x, y } = this.mouth
+    const color = COMBO_COLORS[Math.min(multiplier, COMBO_COLORS.length - 1)]
+    this.floaters.show(
+      i18n.t('game.combo', { n: multiplier }),
+      x,
+      y - 162,
+      color,
+      24 + multiplier * 3,
+    )
+    this.particles.ring(x, y - 60, color, 20, 70 + multiplier * 18, 0.4)
+    this.particles.burst({
+      x,
+      y: y - 150,
+      count: 3 + multiplier * 3,
+      shape: 'star',
+      colors: [color, PALETTE.white],
+      speed: [120, 180 + multiplier * 40],
+      life: [0.35, 0.6],
+      size: [7, 12],
+      drag: 3,
+      spin: 6,
+    })
+    this.shake.add(0.04 * multiplier)
+    this.opts.sound.combo(multiplier)
+    this.opts.haptics.light()
+  }
+
+  private onCloseCall() {
+    this.floaters.show(i18n.t('game.closeCall'), this.mouth.x, this.mouth.y - 206, PALETTE.star, 28)
+    this.opts.sound.closeCall()
+    this.achieve('dodge')
+  }
+
+  private resetCombo() {
+    this.chain = 0
+    this.comboTimer = 0
+  }
+
+  private achieve(id: AchievementId) {
+    if (!this.opts.achievements.has(id)) this.opts.achievements.unlock(id)
+  }
+
+  private onSpawn = (it: Insect) => {
+    if (it.kind === 'golden' && this.mode === 'playing')
+      this.opts.sound.goldenAppear(this.panOf(it.x))
+  }
+
+  private goldBurst(x: number, y: number, count: number) {
+    this.particles.burst({
+      x,
+      y,
+      count,
+      shape: 'star',
+      colors: [PALETTE.gold, PALETTE.goldLight, PALETTE.white],
+      speed: [90, 260],
+      life: [0.35, 0.7],
+      size: [7, 14],
+      gravity: 160,
+      drag: 2.5,
+      spin: 7,
+    })
   }
 
   private die(cause: DeathCause) {
@@ -614,6 +820,7 @@ export class Game {
     if (cause === 'starved') this.pofik.slump()
     this.opts.sound.gameOver()
     this.opts.haptics.heavy()
+    this.resetCombo()
     this.swarm.scatter(this.zone)
     this.vignette.setDanger(0)
     this.hints.hide()
@@ -621,6 +828,41 @@ export class Game {
   }
 
   // Per-frame helpers --------------------------------------------------------
+
+  /** Golden flies leave a trail of sparkles and twinkle while they are around. */
+  private updateSparkles(dt: number) {
+    let twinkling: Insect | null = null
+    for (const it of this.swarm.list) {
+      if (it.kind !== 'golden' || !it.free) continue
+      twinkling = it
+      it.trailTimer -= dt
+      if (it.trailTimer > 0) continue
+      it.trailTimer = 0.05
+      this.particles.burst({
+        x: it.x - Math.sign(it.vx) * 8,
+        y: it.y + 2,
+        count: 1,
+        shape: 'star',
+        colors: [PALETTE.gold, PALETTE.goldLight, PALETTE.white],
+        speed: [8, 36],
+        life: [0.35, 0.65],
+        size: [5, 9],
+        gravity: 30,
+        drag: 2,
+        spin: 5,
+      })
+    }
+    if (!twinkling || this.mode !== 'playing') return
+    this.twinkleTimer -= dt
+    if (this.twinkleTimer > 0) return
+    this.twinkleTimer = this.fxRng.range(0.24, 0.42)
+    this.opts.sound.twinkle(this.panOf(twinkling.x))
+  }
+
+  private panOf(x: number) {
+    const W = this.layout.worldW
+    return clamp((x - W / 2) / (W / 2), -1, 1)
+  }
 
   private updateLook() {
     if (this.tongue.busy) {
@@ -632,7 +874,7 @@ export class Game {
       return
     }
     const target =
-      this.swarm.nearestFree('fly', this.mouth.x, this.mouth.y, this.zone) ??
+      this.swarm.nearestFree('prey', this.mouth.x, this.mouth.y, this.zone) ??
       this.swarm.nearestFree('bee', this.mouth.x, this.mouth.y, this.zone)
     if (target) this.pofik.lookAt(target.x, target.y)
     else this.pofik.clearLook()
@@ -641,7 +883,7 @@ export class Game {
   private updateHints(dt: number) {
     const { hints } = this.opts
     if (!hints.isDone('tapFly')) {
-      const fly = this.swarm.nearestFree('fly', this.mouth.x, this.mouth.y, this.zone)
+      const fly = this.swarm.nearestFree('prey', this.mouth.x, this.mouth.y, this.zone)
       if (fly && this.runTime > 0.6) this.hints.show('tapFly', fly)
       else this.hints.hide()
       return
@@ -660,30 +902,35 @@ export class Game {
 
   private updateBuzz() {
     if (this.mode === 'paused') return
-    const source = (kind: 'fly' | 'bee') => {
-      const it = this.swarm.nearestFree(kind, this.mouth.x, this.mouth.y)
+    const source = (filter: InsectFilter) => {
+      const it = this.swarm.nearestFree(filter, this.mouth.x, this.mouth.y)
       if (!it) return null
       const d = Math.hypot(it.x - this.mouth.x, it.y - this.mouth.y)
-      const W = this.layout.worldW
       return {
-        pan: clamp((it.x - W / 2) / (W / 2), -1, 1),
+        pan: this.panOf(it.x),
         proximity: clamp(1 - d / 560, 0, 1),
         speed: Math.hypot(it.vx, it.vy),
       }
     }
-    this.opts.buzz.update(source('fly'), source('bee'))
+    this.opts.buzz.update(source('prey'), source('bee'))
   }
 
   private pushHud(force: boolean) {
     const h01 = this.hunger / CONFIG.hunger.max
     const critical = this.mode === 'playing' && rules.isCritical(this.hunger)
+    const combo = rules.comboMultiplier(this.chain)
     const last = this.hudLast
-    if (!force && Math.abs(h01 - last.h) < 0.0005 && this.score === last.s && critical === last.c)
-      return
+    const same =
+      Math.abs(h01 - last.h) < 0.0005 &&
+      this.score === last.s &&
+      critical === last.c &&
+      combo === last.m
+    if (!force && same) return
     last.h = h01
     last.s = this.score
     last.c = critical
-    this.opts.hud(h01, this.score, critical)
+    last.m = combo
+    this.opts.hud({ hunger: h01, score: this.score, critical, combo })
   }
 
   private updateDebug(dt: number) {

@@ -1,28 +1,32 @@
 import { AnimatePresence, m } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setMockAdPresenter, type MockAdKind } from '../../platform/monetization'
+import { useAppStore } from '../store'
+import { useT } from '../useT'
 import { PhoneIcon } from '../ui/icons'
 import { PofikFace } from '../ui/PofikFace'
 
 /** Shown while the game boots. */
 export function Splash() {
+  const skin = useAppStore((s) => s.look.skin)
   return (
     <m.div
       className="splash"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.35 } }}
     >
-      <PofikFace className="splash__face" />
+      <PofikFace className="splash__face" skin={skin} />
     </m.div>
   )
 }
 
 /** Phones held sideways: asks to rotate back. CSS decides when it is visible. */
 export function RotateDevice() {
+  const t = useT()
   return (
     <div className="rotate" role="alert">
       <PhoneIcon className="rotate__phone" />
-      <p>Turn your phone upright to play</p>
+      <p>{t('rotate.message')}</p>
     </div>
   )
 }
@@ -37,6 +41,7 @@ export function MockAdOverlay() {
   const [ad, setAd] = useState<PendingAd | null>(null)
   const [left, setLeft] = useState(0)
   const adRef = useRef<PendingAd | null>(null)
+  const t = useT()
 
   useEffect(
     () =>
@@ -80,16 +85,16 @@ export function MockAdOverlay() {
         >
           <div className="mock-ad__box">
             <p className="mock-ad__kind">
-              {ad.kind === 'rewarded' ? 'Rewarded ad' : 'Interstitial ad'}
+              {ad.kind === 'rewarded' ? t('ad.rewarded') : t('ad.interstitial')}
             </p>
-            <p className="mock-ad__note">Development mock, no real ad network</p>
+            <p className="mock-ad__note">{t('ad.note')}</p>
             <div className="mock-ad__count">{left > 0 ? left : '✓'}</div>
             <button
               type="button"
               className="btn btn--secondary btn--md"
               onClick={() => finish(left <= 0)}
             >
-              {left > 0 ? 'Skip' : 'Close'}
+              {left > 0 ? t('ad.skip') : t('ad.close')}
             </button>
           </div>
         </m.div>

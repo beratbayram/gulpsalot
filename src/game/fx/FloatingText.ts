@@ -14,12 +14,12 @@ interface Floater {
 
 const LIFE = 0.9
 
-/** Pooled "+1" / "Ouch!" popups that spring in, float up and fade. */
+/** Pooled "+1" / "Ouch!" / combo popups that spring in, float up and fade. */
 export class FloatingText {
   readonly layer = new Container()
   private readonly pool: Floater[] = []
 
-  constructor(size = 6) {
+  constructor(size = 10) {
     for (let i = 0; i < size; i++) {
       const text = new Text({
         text: '',

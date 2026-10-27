@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js'
+import { t, type MessageKey } from '../../i18n'
 import { clamp, damp } from '../../lib/math'
 import { Spring } from '../../lib/spring'
 import { PALETTE } from '../draw/palette'
@@ -7,9 +8,9 @@ import { GAME_FONT } from '../fonts'
 
 export type HintKind = 'tapFly' | 'avoidBee'
 
-const LABELS: Record<HintKind, string> = {
-  tapFly: 'Tap the fly!',
-  avoidBee: "Don't lick bees!",
+const LABELS: Record<HintKind, MessageKey> = {
+  tapFly: 'game.hintFly',
+  avoidBee: 'game.hintBee',
 }
 
 /** First-run coaching: a tapping hand and a speech bubble that follow an insect. */
@@ -45,10 +46,14 @@ export class Hints {
   }
 
   show(kind: HintKind, target: Insect) {
+    // Checked every call so a language switch mid-run updates the bubble.
+    const label = t(LABELS[kind])
+    if (this.label.text !== label) {
+      this.label.text = label
+      this.drawBubble(kind)
+    }
     if (this.kind !== kind) {
       this.kind = kind
-      this.label.text = LABELS[kind]
-      this.drawBubble(kind)
       this.x = target.x
       this.y = target.y
       this.pop.snap(0.6)

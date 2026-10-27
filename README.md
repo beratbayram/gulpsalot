@@ -4,6 +4,10 @@ A portrait, mobile-first web game. Pofik is a chubby frog on a lily pad: tap any
 and his springy tongue shoots there. Flies fill his belly, bees sting. The belly drains
 over time and the run ends when it is empty.
 
+Rare golden flies, zig-zagging dragonflies and (once the sky turns to night) fireflies
+are worth more, and quick catches build a combo multiplier. There is a daily challenge,
+skins and hats unlocked by best score, achievements, and a Turkish and English UI.
+
 Built with React, PixiJS and TypeScript. Ships as an installable, offline-capable PWA.
 Android and iOS builds come later through Capacitor (see below).
 
@@ -27,7 +31,7 @@ to judge feel, sound and haptics.
 | `pnpm typecheck` | `tsc -b`                                      |
 | `pnpm lint`      | oxlint                                        |
 | `pnpm format`    | Prettier                                      |
-| `pnpm test`      | Vitest (springs, collisions, rules, platform) |
+| `pnpm test`      | Vitest (rules, progress, i18n, platform, lib) |
 
 ### URL flags
 
@@ -36,6 +40,7 @@ to judge feel, sound and haptics.
 | `?debug`     | FPS and state line, hitboxes, insect zone, `window.__pofik` handle |
 | `?slow=0.25` | Slow motion, for reviewing animation timing                        |
 | `?seed=42`   | Deterministic insect spawns                                        |
+| `?time=100`  | Start every run at this many seconds (difficulty, dusk and night)  |
 | `?ads=mock`  | Fake rewarded/interstitial ads (default in dev)                    |
 | `?ads=none`  | No ads (default in production)                                     |
 
@@ -47,6 +52,7 @@ src/
   game/       Pixi game: Game loop, entities, effects, background, rules, config
   audio/      Web Audio engine and synthesized sound recipes (no audio files)
   platform/   Storage, haptics, lifecycle, ad/store hooks (Capacitor seams)
+  i18n/       English and Turkish strings, shared by the UI and the game
   lib/        Springs, noise, RNG, math
 ```
 
@@ -66,9 +72,28 @@ src/
 
 ### Tuning
 
-Gameplay and feel numbers live in `src/game/config.ts`: hunger drain and rewards, sting
-penalty, spawn curve, tongue springs, shake and hit-stop strengths. The difficulty curve
-is in `src/game/rules.ts` and covered by tests.
+Gameplay and feel numbers live in `src/game/config.ts`: hunger drain, points and food per
+insect, combo window and steps, sting penalty, spawn curves (including when golden flies,
+dragonflies and fireflies show up), the day to night timeline, tongue springs, shake and
+hit-stop strengths. The difficulty curve is in `src/game/rules.ts` and covered by tests.
+Skin and hat unlock scores are in `src/game/cosmetics.ts`.
+
+### Progress and content
+
+- **Combos.** Insects caught in quick succession (a multi-catch counts all at once) build a
+  x2 to x5 score multiplier. The combo clock pauses while the tongue is out; a miss or a
+  sting ends it.
+- **Daily challenge.** A run seeded from the local date (`src/game/daily.ts`). Spawns use
+  their own RNG stream, and every spawn attempt draws the same numbers whether or not it
+  is capped, so everyone gets the same insects in the same places regardless of frame rate
+  or how they play. Effects use a separate stream. No continue on daily runs.
+- **Achievements** are listed in `src/game/achievements.ts`. The game unlocks them through
+  `GameOptions.achievements`; the app stores them and shows a toast.
+- **Skins and hats.** Hats are plain shape data (`src/game/draw/hats.ts`) drawn by both Pixi
+  and the SVG face in the UI, so the wardrobe previews match the game.
+- **Languages.** `src/i18n/en.ts` defines the keys; `tr.ts` must cover all of them (a test
+  checks this, placeholders included). The language follows the device until the player
+  picks one with the EN/TR button.
 
 ## Mobile notes
 
