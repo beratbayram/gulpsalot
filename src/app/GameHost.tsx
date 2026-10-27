@@ -64,7 +64,7 @@ export function GameHost({ children }: { children: ReactNode }) {
       }
       instance = g
       setGame(g)
-      if (import.meta.env.DEV || options.debug) window.__pofik = g
+      if (import.meta.env.DEV || options.debug) window.__gulpsalot = g
       useAppStore.getState().setScreen('title')
     })
 

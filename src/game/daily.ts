@@ -14,7 +14,7 @@ export function dailyKey(date = new Date()) {
 /** Stable 32-bit seed for a day (FNV-1a). */
 export function dailySeed(key: string) {
   let h = 0x811c9dc5
-  for (const ch of `pofik:${key}`) {
+  for (const ch of `gulpsalot:${key}`) {
     h ^= ch.charCodeAt(0)
     h = Math.imul(h, 0x01000193)
   }

@@ -1,5 +1,5 @@
 /**
- * Pofik's skins and hats, and the best score each one unlocks at. Secret looks
+ * Gulpsalot's skins and hats, and the best score each one unlocks at. Secret looks
  * unlock by doing something odd instead (see `SecretId`). Also the pond
  * decorations, unlocked by finishing missions.
  */

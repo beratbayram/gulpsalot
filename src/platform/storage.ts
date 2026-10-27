@@ -8,7 +8,7 @@ export interface StorageBackend {
 export function localStorageBackend(): StorageBackend | null {
   try {
     const ls = window.localStorage
-    const probe = '__pofik_probe__'
+    const probe = '__gulpsalot_probe__'
     ls.setItem(probe, '1')
     ls.removeItem(probe)
     return {
@@ -32,7 +32,7 @@ export class KeyValueStore {
   private readonly createBackend: () => StorageBackend | null
   private readonly prefix: string
 
-  constructor(createBackend: () => StorageBackend | null, prefix = 'pofik:v1:') {
+  constructor(createBackend: () => StorageBackend | null, prefix = 'gulpsalot:v1:') {
     this.createBackend = createBackend
     this.prefix = prefix
   }

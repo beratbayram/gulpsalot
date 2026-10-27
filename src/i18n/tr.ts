@@ -66,9 +66,9 @@ export const tr: Record<MessageKey, string> = {
   'challenge.mode': 'Meydan okuma',
   'challenge.dismiss': 'Şimdi değil',
 
-  'share.daily': 'Pofik günlük · {date}',
-  'share.mode': 'Pofik · {mode}',
-  'share.challenge': "Pofik'te {n} puan yaptım. Aynı böcekler, aynı gölet. Geçebilir misin?",
+  'share.daily': 'Gulpsalot günlük · {date}',
+  'share.mode': 'Gulpsalot · {mode}',
+  'share.challenge': "Gulpsalot'ta {n} puan yaptım. Aynı böcekler, aynı gölet. Geçebilir misin?",
 
   'settings.soundOff': 'Sesi kapat',
   'settings.soundOn': 'Sesi aç',
@@ -117,8 +117,8 @@ export const tr: Record<MessageKey, string> = {
   'wardrobe.secret': 'Gizli görünüm. İpucu: {hint}',
   'wardrobe.decorLocked': '{name}, {n} görevden sonra açılır',
 
-  'secret.nightOwl': 'Pofik bir gece kuşu.',
-  'secret.ticklish': 'Pofik çok gıdıklanır.',
+  'secret.nightOwl': 'Gulpsalot bir gece kuşu.',
+  'secret.ticklish': 'Gulpsalot çok gıdıklanır.',
   'secret.flawless': 'Hiç ıskalama.',
 
   'decor.reeds': 'Hasırotu',
@@ -171,7 +171,7 @@ export const tr: Record<MessageKey, string> = {
   'mission.rush': 'Telaş modunda {n} puan yap',
   'mission.sharp': 'Keskin nişancıda {n} puan yap',
   'mission.one.golden': 'Bir altın sinek yakala',
-  'mission.one.burp': "Pofik'i geğirt",
+  'mission.one.burp': "Gulpsalot'u geğirt",
   'mission.one.daily': 'Bir günlük meydan okumayı bitir',
 
   'stats.title': 'Gölet günlüğü',
@@ -221,7 +221,7 @@ export const tr: Record<MessageKey, string> = {
   'ach.daily.title': 'Günlük alışkanlık',
   'ach.daily.desc': 'Bir günlük meydan okumayı bitir.',
   'ach.boop.title': 'Gıdıklanan',
-  'ach.boop.desc': "Pofik'i art arda 10 kez gıdıkla.",
+  'ach.boop.desc': "Gulpsalot'u art arda 10 kez gıdıkla.",
   'ach.moth.title': 'Pervane gibi',
   'ach.moth.desc': 'Bir gece kelebeği yakala.',
   'ach.heron.title': 'Heykel',
@@ -231,7 +231,7 @@ export const tr: Record<MessageKey, string> = {
   'ach.set.title': 'Takım tamam',
   'ach.set.desc': 'Art arda aynı türden üç böcek yakala.',
   'ach.burp.title': 'Pardon',
-  'ach.burp.desc': "Pofik'i geğirtecek kadar ye.",
+  'ach.burp.desc': "Gulpsalot'u geğirtecek kadar ye.",
   'ach.streak3.title': 'Alev aldı',
   'ach.streak3.desc': 'Günlük meydan okumayı üç gün üst üste bitir.',
 }

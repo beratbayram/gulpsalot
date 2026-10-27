@@ -1,6 +1,6 @@
 import type { HazardKind, PreyKind } from './rules'
 
-/** What stung, bit or pecked Pofik. */
+/** What stung, bit or pecked Gulpsalot. */
 export type StingSource = HazardKind | 'heron'
 
 /**

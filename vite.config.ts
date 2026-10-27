@@ -5,12 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const isTest = Boolean(process.env.VITEST)
 
-// The web build is served at beratbayram.com/pofik. Native builds (Capacitor) can
-// pass POFIK_BASE=./ to get relative paths instead.
-const base = process.env.POFIK_BASE ?? '/pofik/'
-// The public URL has no trailing slash (the main Next.js site strips it), so the
-// service worker scope is "/pofik" and sw.js is served with Service-Worker-Allowed.
-const scope = base === './' ? './' : base.replace(/\/$/, '')
+// The web build is served from the root of gulpsalot.beratbayram.com. Native builds
+// (Capacitor) can pass GULPSALOT_BASE=./ to get relative paths instead.
+const base = process.env.GULPSALOT_BASE ?? '/'
 
 export default defineConfig({
   base,
@@ -20,21 +17,21 @@ export default defineConfig({
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,
-        scope,
+        scope: base,
         pwaAssets: { config: true, overrideManifestIcons: true },
         manifest: {
-          id: scope,
-          name: 'Pofik',
-          short_name: 'Pofik',
-          description: 'Help Pofik catch flies with a springy tongue. Never lick a bee.',
+          id: base,
+          name: 'Gulpsalot',
+          short_name: 'Gulpsalot',
+          description: 'Help Gulpsalot catch flies with a springy tongue. Never lick a bee.',
           lang: 'en',
           theme_color: '#78c6f0',
           background_color: '#bfe6fb',
           display: 'fullscreen',
           display_override: ['fullscreen', 'standalone'],
           orientation: 'portrait',
-          start_url: scope,
-          scope,
+          start_url: base,
+          scope: base,
           categories: ['games', 'entertainment'],
         },
         workbox: {
@@ -61,10 +58,6 @@ export default defineConfig({
         },
       },
     },
-  },
-  // Mirrors the production header so `pnpm preview` can register the worker.
-  preview: {
-    headers: scope === './' ? {} : { 'Service-Worker-Allowed': scope },
   },
   test: {
     environment: 'node',

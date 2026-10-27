@@ -25,7 +25,7 @@ import {
   TargetIcon,
   TimerIcon,
 } from '../ui/icons'
-import { PofikFace } from '../ui/PofikFace'
+import { GulpsalotFace } from '../ui/GulpsalotFace'
 
 const COUNT_DELAY = 450
 const COUNT_DURATION = 750
@@ -184,7 +184,7 @@ export function GameOverScreen() {
               <div className="unlocks__items">
                 {run.unlocks.map((u) => (
                   <span key={`${u.type}-${u.id}`} className="unlock">
-                    <PofikFace
+                    <GulpsalotFace
                       className="unlock__face"
                       skin={u.type === 'skin' ? u.id : skin}
                       hat={u.type === 'hat' ? u.id : 'none'}

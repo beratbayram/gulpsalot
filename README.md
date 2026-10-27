@@ -1,6 +1,6 @@
-# Pofik
+# Gulpsalot
 
-A portrait, mobile-first web game. Pofik is a chubby frog on a lily pad: tap anywhere
+A portrait, mobile-first web game. Gulpsalot is a chubby frog on a lily pad: tap anywhere
 and his springy tongue shoots there. Flies fill his belly, bees sting. The belly drains
 over time and the run ends when it is empty.
 
@@ -25,10 +25,9 @@ pnpm install
 pnpm dev
 ```
 
-The game is served under `/pofik/`, like in production: open
-`http://localhost:5173/pofik/`. `pnpm dev` also listens on your LAN, so you can open the
-printed `Network` URL (plus `/pofik/`) on a phone on the same Wi-Fi. That is the best way
-to judge feel, sound and haptics.
+Open `http://localhost:5173/`. `pnpm dev` also listens on your LAN, so you can open the
+printed `Network` URL on a phone on the same Wi-Fi. That is the best way to judge feel,
+sound and haptics.
 
 | Script           | What it does                                  |
 | ---------------- | --------------------------------------------- |
@@ -42,14 +41,14 @@ to judge feel, sound and haptics.
 
 ### URL flags
 
-| Flag         | Effect                                                             |
-| ------------ | ------------------------------------------------------------------ |
-| `?debug`     | FPS and state line, hitboxes, insect zone, `window.__pofik` handle |
-| `?slow=0.25` | Slow motion, for reviewing animation timing                        |
-| `?seed=42`   | Deterministic insect spawns                                        |
-| `?time=100`  | Start every run at this many seconds (difficulty, dusk and night)  |
-| `?ads=mock`  | Fake rewarded/interstitial ads (default in dev)                    |
-| `?ads=none`  | No ads (default in production)                                     |
+| Flag         | Effect                                                                 |
+| ------------ | ---------------------------------------------------------------------- |
+| `?debug`     | FPS and state line, hitboxes, insect zone, `window.__gulpsalot` handle |
+| `?slow=0.25` | Slow motion, for reviewing animation timing                            |
+| `?seed=42`   | Deterministic insect spawns                                            |
+| `?time=100`  | Start every run at this many seconds (difficulty, dusk and night)      |
+| `?ads=mock`  | Fake rewarded/interstitial ads (default in dev)                        |
+| `?ads=none`  | No ads (default in production)                                         |
 
 A shared challenge link adds `?challenge=<seed>.<score>`; the game keeps it for the title
 screen and removes it from the address.
@@ -72,10 +71,10 @@ src/
 - **Fixed sub-steps.** Each frame is split into steps of at most 1/120 s, so springs and
   collisions behave the same at 60, 90 or 120 Hz. Hit-stop freezes the simulation for a
   few milliseconds on impacts.
-- **Springs everywhere.** The tongue tip, Pofik's squash and stretch, lean, eyes, belly
+- **Springs everywhere.** The tongue tip, Gulpsalot's squash and stretch, lean, eyes, belly
   and most reactions are damped springs (`src/lib/spring.ts`). The tongue body is a short
   Verlet rope so fast shots whip and curve.
-- **All art is code.** Pofik, insects and the pond are drawn with Pixi Graphics; the UI
+- **All art is code.** Gulpsalot, insects and the pond are drawn with Pixi Graphics; the UI
   uses the same palette (`src/game/draw/palette.ts`, mirrored in `tokens.css`).
 - **All sound is synthesized** with oscillators and filtered noise
   (`src/audio/sfx.ts`). The nearest fly and bee each drive a quiet, panned buzz. The
@@ -124,7 +123,7 @@ Skin and hat unlock scores are in `src/game/cosmetics.ts`.
   `GameOptions.achievements`; the app stores them and shows a toast.
 - **Skins and hats.** Hats are plain shape data (`src/game/draw/hats.ts`) drawn by both Pixi
   and the SVG face in the UI, so the wardrobe previews match the game. Three looks are
-  secret, unlocked by playing after midnight, tickling Pofik 50 times and a run of 20
+  secret, unlocked by playing after midnight, tickling Gulpsalot 50 times and a run of 20
   catches without a miss.
 - **Languages.** `src/i18n/en.ts` defines the keys; `tr.ts` must cover all of them (a test
   checks this, placeholders included). The language follows the device until the player
@@ -142,35 +141,22 @@ Skin and hat unlock scores are in `src/game/cosmetics.ts`.
   supported).
 - On desktop the game is shown in a phone-shaped frame.
 
-## Deploying to beratbayram.com/pofik
+## Deploying to gulpsalot.beratbayram.com
 
-Pofik is its own Vercel project. The main site (`beratbayramcom`, Next.js) proxies
-`/pofik` and `/pofik/*` to it with a rewrite in its `next.config.ts`, so players only
-ever see `www.beratbayram.com/pofik`.
-
-```
-www.beratbayram.com/pofik  ->  beratbayramcom (Next.js rewrite)  ->  pofik.vercel.app/pofik
-```
-
-- Assets are built with `base: '/pofik/'`. The public URL has no trailing slash (Next.js
-  strips it), so the service worker uses scope `/pofik`, which needs the
-  `Service-Worker-Allowed: /pofik` header set in `vercel.json`.
-- `vercel.json` also maps `/pofik/*` back to the build output, sends hashed assets with a
-  one-year immutable cache, keeps `sw.js` uncached, and redirects the bare deployment root
-  to `/pofik`.
+Gulpsalot is its own Vercel project, served from the root of `gulpsalot.beratbayram.com`.
+Assets are built with `base: '/'` and the service worker covers the whole domain.
+`vercel.json` sends hashed assets with a one-year immutable cache and keeps `sw.js`
+uncached.
 
 One-time setup:
 
 1. Push this repo to GitHub.
-2. In Vercel, import it as a new project named `pofik`. Framework, build command and
+2. In Vercel, import it as a new project named `gulpsalot`. Framework, build command and
    output directory come from `vercel.json`; nothing to change.
-3. Check the production domain Vercel assigns. If it is not `pofik.vercel.app`, set the
-   `POFIK_ORIGIN` environment variable on the `beratbayramcom` project to it (for example
-   `https://pofik-yourteam.vercel.app`).
-4. Deploy `beratbayramcom` with the `/pofik` rewrite.
+3. Add `gulpsalot.beratbayram.com` as a domain on the project and create the DNS record
+   Vercel shows for it.
 
-After that, every push to this repo's production branch updates the game; the website
-does not need to redeploy.
+After that, every push to this repo's production branch updates the game.
 
 ## Going native later (Capacitor)
 
@@ -178,8 +164,9 @@ The code is already shaped for it: no URL routing, safe-area insets, and platfor
 in `src/platform/`. Rough steps:
 
 1. `pnpm add @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios`
-2. `pnpm exec cap init Pofik <app id> --web-dir dist`, then `cap add android` / `cap add ios`
-   (build with `POFIK_BASE=./ pnpm build` so paths are relative inside the app)
+2. `pnpm exec cap init Gulpsalot <app id> --web-dir dist`, then `cap add android` /
+   `cap add ios` (build with `GULPSALOT_BASE=./ pnpm build` so paths are relative inside
+   the app)
 3. Swap implementations behind the existing seams:
    - `platform/storage.ts`: Capacitor Preferences backend
    - `platform/haptics.ts`: `@capacitor/haptics`

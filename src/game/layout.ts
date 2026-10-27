@@ -36,7 +36,7 @@ export function computeLayout(viewW: number, viewH: number): Layout {
     waterY: worldH - waterFromBottom,
     padY,
     flyTop,
-    // Keep insects above Pofik's head so every one of them is reachable.
+    // Keep insects above Gulpsalot's head so every one of them is reachable.
     flyBottom: padY - 190,
   }
 }

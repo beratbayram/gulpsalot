@@ -35,7 +35,7 @@ export const MODES: Record<PlayMode, ModeRules> = {
     startTime: 0,
     canContinue: true,
   },
-  // No bees, no hunger, no score: just Pofik and the pond.
+  // No bees, no hunger, no score: just Gulpsalot and the pond.
   zen: {
     hazards: false,
     hunger: false,

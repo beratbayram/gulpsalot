@@ -24,7 +24,7 @@
   gap: 0.8em;
 }
 
-/* Short phones: tighter spacing and a smaller logo, so the menu stays above Pofik. */
+/* Short phones: tighter spacing and a smaller logo, so the menu stays above Gulpsalot. */
 @container (max-height: 720px) {
   .title-screen {
     padding-top: calc(var(--safe-top) + 4.5cqh);
@@ -32,7 +32,7 @@
   }
 
   .title-screen .logo {
-    font-size: clamp(56px, 19cqw, 92px);
+    font-size: clamp(40px, 15cqw, 70px);
   }
 
   .title-actions {
@@ -45,7 +45,7 @@
 
 .logo {
   display: flex;
-  font-size: clamp(60px, 24cqw, 112px);
+  font-size: clamp(44px, 18cqw, 84px);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -409,7 +409,7 @@
   }
 }
 
-/* Fills from the bottom as Pofik overeats; empties with a burp. */
+/* Fills from the bottom as Gulpsalot overeats; empties with a burp. */
 .burp {
   position: relative;
   flex: none;

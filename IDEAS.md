@@ -24,7 +24,7 @@ spawns or gameplay timing has to keep the daily challenge deterministic (see `AG
   hat turns the pad into a raft, a wizard hat gives purple fireflies). Seen in Crossy Road.
 - **Swipe shots (advanced).** A drag curves the rope through several insects. Seen in
   Mister Frog. Tap stays the default so the one-tap feel survives.
-- **Lily pad hops.** Two or three pads; tapping an empty pad hops Pofik there, changing
+- **Lily pad hops.** Two or three pads; tapping an empty pad hops Gulpsalot there, changing
   his angle and reach. A bigger change to the core loop, worth a prototype first.
 - **Share image card.** The daily share sends a text line today; an image card rendered
   from the canvas would stand out more in chats.

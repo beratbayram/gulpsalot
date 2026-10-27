@@ -17,7 +17,7 @@ const F = CONFIG.fish
 export class Fish {
   /** The leaping fish, drawn among the insects. */
   readonly view = new Container()
-  /** Its shape under the water while it lurks, drawn behind Pofik. */
+  /** Its shape under the water while it lurks, drawn behind Gulpsalot. */
   readonly shadow = new Graphics()
   state: FishState = 'idle'
   target: Insect | null = null

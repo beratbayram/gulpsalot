@@ -3,8 +3,8 @@ import { challengeUrl, parseChallenge, resultLine, withoutChallenge } from './sh
 
 describe('challenge links', () => {
   it('round-trips a seed and score through a link', () => {
-    const url = challengeUrl('https://www.beratbayram.com/pofik?debug#x', { seed: 123, score: 42 })
-    expect(url).toBe('https://www.beratbayram.com/pofik?challenge=123.42')
+    const url = challengeUrl('https://gulpsalot.beratbayram.com/?debug#x', { seed: 123, score: 42 })
+    expect(url).toBe('https://gulpsalot.beratbayram.com/?challenge=123.42')
     expect(parseChallenge(new URL(url).search)).toEqual({ seed: 123, score: 42 })
   })
 
@@ -16,8 +16,8 @@ describe('challenge links', () => {
   })
 
   it('removes only the challenge parameter', () => {
-    expect(withoutChallenge('http://localhost/pofik/?challenge=5.1&debug')).toBe(
-      'http://localhost/pofik/?debug=',
+    expect(withoutChallenge('http://localhost/?challenge=5.1&debug')).toBe(
+      'http://localhost/?debug=',
     )
   })
 })

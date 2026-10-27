@@ -16,9 +16,9 @@ import { useT } from '../useT'
 import { DECOR_ART } from '../ui/decorArt'
 import { LockIcon } from '../ui/icons'
 import { Panel } from '../ui/Panel'
-import { PofikFace } from '../ui/PofikFace'
+import { GulpsalotFace } from '../ui/GulpsalotFace'
 
-/** Pick Pofik's color and hat, and dress up the pond. The game shows changes live. */
+/** Pick Gulpsalot's color and hat, and dress up the pond. The game shows changes live. */
 export function Wardrobe() {
   const t = useT()
   const look = useAppStore((s) => s.look)
@@ -46,7 +46,7 @@ export function Wardrobe() {
                 selected={look.skin === skin.id}
                 onPick={() => setLook({ ...look, skin: skin.id })}
               >
-                <PofikFace skin={skin.id} hat="none" />
+                <GulpsalotFace skin={skin.id} hat="none" />
               </Tile>
             ))}
           </div>
@@ -64,7 +64,7 @@ export function Wardrobe() {
                 selected={look.hat === hat.id}
                 onPick={() => setLook({ ...look, hat: hat.id })}
               >
-                <PofikFace skin={look.skin} hat={hat.id} />
+                <GulpsalotFace skin={look.skin} hat={hat.id} />
               </Tile>
             ))}
           </div>

@@ -4,21 +4,13 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "redirects": [{ "source": "/", "destination": "/pofik", "permanent": false }],
-  "rewrites": [
-    { "source": "/pofik", "destination": "/index.html" },
-    { "source": "/pofik/:path*", "destination": "/:path*" }
-  ],
   "headers": [
     {
-      "source": "/pofik/sw.js",
-      "headers": [
-        { "key": "Service-Worker-Allowed", "value": "/pofik" },
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
-      ]
+      "source": "/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
-      "source": "/pofik/assets/(.*)",
+      "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     }
   ]

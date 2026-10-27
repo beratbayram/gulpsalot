@@ -3,7 +3,7 @@ import { useGame } from '../gameContext'
 import { useHudStore } from '../hudStore'
 import { useAppStore } from '../store'
 import { useT } from '../useT'
-import { PofikFace } from './PofikFace'
+import { GulpsalotFace } from './GulpsalotFace'
 
 const GOOD = [139, 214, 90]
 const OK = [255, 201, 60]
@@ -101,7 +101,7 @@ export function HungerBar() {
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <PofikFace className="hunger__face" mood={worried ? 'worried' : 'happy'} skin={skin} />
+      <GulpsalotFace className="hunger__face" mood={worried ? 'worried' : 'happy'} skin={skin} />
       <div className="hunger__track">
         <div className="hunger__trail" />
         <div className="hunger__fill" />

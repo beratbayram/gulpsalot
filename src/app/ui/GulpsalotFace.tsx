@@ -5,15 +5,20 @@ import { HAT_ART, HAT_OUTLINE, type HatShape } from '../../game/draw/hats'
 const ink = '#26313d'
 const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`
 
-interface PofikFaceProps extends SVGProps<SVGSVGElement> {
+interface GulpsalotFaceProps extends SVGProps<SVGSVGElement> {
   mood?: 'happy' | 'worried'
   skin?: SkinId
   /** Draws a hat and leaves room above the head for it. */
   hat?: HatId
 }
 
-/** Pofik's face as an SVG, matching the in-game art. Used by the HUD, splash and wardrobe. */
-export function PofikFace({ mood = 'happy', skin = 'classic', hat, ...props }: PofikFaceProps) {
+/** Gulpsalot's face as an SVG, matching the in-game art. Used by the HUD, splash and wardrobe. */
+export function GulpsalotFace({
+  mood = 'happy',
+  skin = 'classic',
+  hat,
+  ...props
+}: GulpsalotFaceProps) {
   const gradient = useId()
   const c = skinColors(skin)
   return (
@@ -61,7 +66,7 @@ export function PofikFace({ mood = 'happy', skin = 'classic', hat, ...props }: P
   )
 }
 
-/** The in-game hat, mapped from Pofik's body space onto this smaller face. */
+/** The in-game hat, mapped from Gulpsalot's body space onto this smaller face. */
 function Hat({ id }: { id: Exclude<HatId, 'none'> }) {
   const art = HAT_ART[id]
   const degrees = (art.rotation * 180) / Math.PI

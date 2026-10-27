@@ -80,7 +80,7 @@ export function createSfx(e: AudioEngine) {
       if (count > 1) tone(e, { type: 'sine', f0: NOTE.E6, dur: 0.12, gain: 0.07, at: 0.12 })
     },
 
-    /** Tapping Pofik: a squeaky giggle. */
+    /** Tapping Gulpsalot: a squeaky giggle. */
     boop() {
       const p = vary(0.06)
       tone(e, { type: 'triangle', f0: 540, f1: 1050, dur: 0.1, gain: 0.22 }, p)

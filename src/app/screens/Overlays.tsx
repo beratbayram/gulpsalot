@@ -4,7 +4,7 @@ import { setMockAdPresenter, type MockAdKind } from '../../platform/monetization
 import { useAppStore } from '../store'
 import { useT } from '../useT'
 import { PhoneIcon } from '../ui/icons'
-import { PofikFace } from '../ui/PofikFace'
+import { GulpsalotFace } from '../ui/GulpsalotFace'
 
 /** Shown while the game boots. */
 export function Splash() {
@@ -15,7 +15,7 @@ export function Splash() {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.35 } }}
     >
-      <PofikFace className="splash__face" skin={skin} />
+      <GulpsalotFace className="splash__face" skin={skin} />
     </m.div>
   )
 }

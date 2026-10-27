@@ -30,7 +30,7 @@ export const CONFIG = {
   },
 
   stun: 0.9,
-  /** Seconds without a catch before Pofik yawns. */
+  /** Seconds without a catch before Gulpsalot yawns. */
   yawnAfter: 7,
   invulnerableAfterContinue: 1.6,
   dyingDuration: 1.4,
@@ -82,7 +82,7 @@ export const CONFIG = {
   /** A hit within this distance of an insect's center is a bullseye. */
   bullseye: { radius: 7, points: 1 },
 
-  /** Eating a ladybug: Pofik grimaces and his next shot launches slower. */
+  /** Eating a ladybug: Gulpsalot grimaces and his next shot launches slower. */
   bitter: { shots: 1, launchScale: 0.5 },
 
   combo: {
@@ -194,7 +194,7 @@ export const CONFIG = {
     fogLift: [25, 60] as const,
   },
 
-  /** A heron's shadow crosses the pond; shooting while it watches gets Pofik pecked. */
+  /** A heron's shadow crosses the pond; shooting while it watches gets Gulpsalot pecked. */
   heron: {
     start: 40,
     interval: [50, 75] as const,

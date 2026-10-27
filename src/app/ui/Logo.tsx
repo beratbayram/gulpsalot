@@ -1,11 +1,15 @@
 import { m, type Variants } from 'motion/react'
 
 const LETTERS = [
-  { ch: 'P', color: '#8bd65a' },
-  { ch: 'o', color: '#ff7096' },
-  { ch: 'f', color: '#ffc93c' },
-  { ch: 'i', color: '#5fb4ec' },
-  { ch: 'k', color: '#ff9f43' },
+  { ch: 'G', color: '#8bd65a' },
+  { ch: 'u', color: '#ff7096' },
+  { ch: 'l', color: '#ffc93c' },
+  { ch: 'p', color: '#5fb4ec' },
+  { ch: 's', color: '#ff9f43' },
+  { ch: 'a', color: '#8bd65a' },
+  { ch: 'l', color: '#ff7096' },
+  { ch: 'o', color: '#ffc93c' },
+  { ch: 't', color: '#5fb4ec' },
 ]
 
 const letter: Variants = {
@@ -26,7 +30,7 @@ const letter: Variants = {
 
 export function Logo() {
   return (
-    <h1 className="logo" aria-label="Pofik">
+    <h1 className="logo" aria-label="Gulpsalot">
       {LETTERS.map((l, i) => (
         <m.span key={i} className="logo__letter" custom={i} variants={letter} aria-hidden>
           <span style={{ color: l.color, animationDelay: `${0.9 + i * 0.13}s` }}>{l.ch}</span>

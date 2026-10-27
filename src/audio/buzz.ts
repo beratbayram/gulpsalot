@@ -16,7 +16,7 @@ export interface BuzzInput {
 
 /**
  * Two persistent voices, one for the nearest fly and one for the nearest bee.
- * Volume follows distance to Pofik and stereo pan follows the insect, so you
+ * Volume follows distance to Gulpsalot and stereo pan follows the insect, so you
  * can hear where they are.
  */
 export class BuzzLayer {

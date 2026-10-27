@@ -2,7 +2,7 @@ import { Sprite, Texture } from 'pixi.js'
 import { clamp } from '../../lib/math'
 
 /**
- * Red screen-edge glow. Pulses while Pofik is starving and flashes on stings.
+ * Red screen-edge glow. Pulses while Gulpsalot is starving and flashes on stings.
  * Lives in screen space so shake doesn't move it.
  */
 export class Vignette {

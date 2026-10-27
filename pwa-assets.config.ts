@@ -9,5 +9,5 @@ export default defineConfig({
     maskable: { ...minimal2023Preset.maskable, resizeOptions: { background, fit: 'contain' } },
     apple: { ...minimal2023Preset.apple, resizeOptions: { background, fit: 'contain' } },
   },
-  images: ['public/pofik.svg'],
+  images: ['public/gulpsalot.svg'],
 })

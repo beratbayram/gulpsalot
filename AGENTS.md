@@ -2,14 +2,14 @@
 
 This file provides guidance to coding agents when working with code in this repository.
 
-Pofik is a portrait, mobile-first web game (React 19, PixiJS 8, TypeScript, Vite 8) shipped
+Gulpsalot is a portrait, mobile-first web game (React 19, PixiJS 8, TypeScript, Vite 8) shipped
 as an offline-capable PWA. Package manager is pnpm, Node >= 22.12. `README.md` has the
 player-facing rules, deploy setup and the Capacitor plan; `IDEAS.md` holds parked ideas.
 
 ## Commands
 
 ```bash
-pnpm dev                               # open http://localhost:5173/pofik/ (LAN accessible)
+pnpm dev                               # open http://localhost:5173/ (LAN accessible)
 pnpm build                             # tsc -b, vite build, service worker
 pnpm preview                           # serve the production build
 pnpm typecheck                         # tsc -b
@@ -21,14 +21,13 @@ pnpm test -t "drains faster"           # tests matching a name
 pnpm test:watch
 ```
 
-The app is served under the `/pofik/` base path in dev too; `localhost:5173/` alone shows
-nothing. Tests run in Vitest's `node` environment: no DOM, no Pixi.
+Tests run in Vitest's `node` environment: no DOM, no Pixi.
 
 URL flags for checking behavior: `?debug` (FPS, hitboxes, insect zone), `?slow=0.25`
 (time scale), `?seed=42` (deterministic spawns), `?time=100` (start runs later in the
 difficulty and day/night curve), `?ads=mock` / `?ads=none` (mock is the dev default). A friend's challenge link is
 `?challenge=<seed>.<score>`.
-In dev or with `?debug`, `window.__pofik` is the `Game` instance: `snapshot()` returns
+In dev or with `?debug`, `window.__gulpsalot` is the `Game` instance: `snapshot()` returns
 the run state and insect positions, `worldToCanvas()` converts world points for
 synthetic taps.
 
@@ -58,14 +57,14 @@ synthetic taps.
   `HungerBar` subscribe to `useHudStore` outside React and write CSS variables.
 - Two state machines run side by side: `useAppStore.screen` (boot, title, wardrobe,
   achievements, modes, missions, stats, playing, paused, over) and `Game.mode` (attract,
-  playing, paused, dying, over). Menus sit on top of `attract`, a demo mode where Pofik
+  playing, paused, dying, over). Menus sit on top of `attract`, a demo mode where Gulpsalot
   shoots flies by himself.
 - Run modes: the app's `RunMode` is a `PlayMode` (`classic | zen | rush | sharp`, rules
   in `game/modes.ts`) or `daily` / `challenge`, which play classic rules on a fixed seed.
   `playModeOf` maps one to the other; `Game.startRun({ mode, seed })` takes the rules.
 - `useAppStore` owns persisted progress (best, per-mode bests, settings, look, hints,
   achievements, daily record and streak, stats, missions, secret looks, decorations).
-  Each setter writes through `platform/storage` (keys prefixed `pofik:v1:`). Stored data
+  Each setter writes through `platform/storage` (keys prefixed `gulpsalot:v1:`). Stored data
   is sanitized on hydrate (`isAchievementId`, `sanitizeLook`, `sanitizeStats`,
   `sanitizeMissions`, `sanitizeStreak`, `sanitizeDecor`), so keep that when adding
   persisted fields. `record(event)` turns the game's progress events into stats,
@@ -94,7 +93,7 @@ synthetic taps.
   entities. Pure logic (difficulty ramp, hunger, combos, sky phase) lives in `rules.ts`
   and is covered by `rules.test.ts`. Keep testable logic out of Pixi classes, since tests
   can't construct them.
-- Entities (`Pofik`, `Tongue`, `Insect`, `Swarm`) own Pixi containers and are drawn with
+- Entities (`Gulpsalot`, `Tongue`, `Insect`, `Swarm`) own Pixi containers and are drawn with
   `Graphics`. Motion is damped springs (`lib/spring.ts`); the tongue is a Verlet rope.
   `Swarm` pools insects per kind.
 
@@ -102,7 +101,7 @@ synthetic taps.
 
 - No image or audio assets. Game colors come from `PALETTE` (`game/draw/palette.ts`),
   mirrored by hand in `app/styles/tokens.css`; change both together.
-- Hats are shape data (`game/draw/hats.ts`) drawn by both Pixi and the SVG `PofikFace`,
+- Hats are shape data (`game/draw/hats.ts`) drawn by both Pixi and the SVG `GulpsalotFace`,
   so the wardrobe preview matches the game.
 - Sounds are synthesized (`audio/sfx.ts`, `audio/synth.ts`). The game only knows the
   `SoundSink` interface in `Game.ts`; a new sound is added there and implemented in `sfx`.
@@ -140,11 +139,9 @@ in production.
 
 ### Deploy constraints
 
-Production is `www.beratbayram.com/pofik`, proxied by the main Next.js site to this
-project on Vercel. Vite `base` is `/pofik/` and the service worker scope is `/pofik` (no
-trailing slash), which requires the `Service-Worker-Allowed` header set in `vercel.json`
-and mirrored in `vite.config.ts` `preview.headers`. Changing the base or scope means
-updating both. `POFIK_BASE=./` produces relative paths for native builds.
+Production is `gulpsalot.beratbayram.com`, its own Vercel project served from the domain
+root. Vite `base` and the service worker scope are both `/`; `vercel.json` only sets cache
+headers. `GULPSALOT_BASE=./` produces relative paths for native builds.
 
 ## Conventions
 

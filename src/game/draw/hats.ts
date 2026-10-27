@@ -2,7 +2,7 @@ import type { HatId } from '../cosmetics'
 
 /**
  * Hats as plain shape data, so the game (Pixi) and the UI (SVG) draw the
- * exact same art. Coordinates are in Pofik's body space, relative to the top
+ * exact same art. Coordinates are in Gulpsalot's body space, relative to the top
  * of his head between the eyes; the eye bumps peak around (±36, 0).
  * Shapes with `outline` get an ink stroke.
  */
@@ -153,5 +153,5 @@ export const HAT_ART: Record<Exclude<HatId, 'none'>, HatArt> = {
   },
 }
 
-/** Where the hat sits in Pofik's body space (the top of his head). */
+/** Where the hat sits in Gulpsalot's body space (the top of his head). */
 export const HAT_ANCHOR = { x: 0, y: -138 }

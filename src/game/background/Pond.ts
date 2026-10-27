@@ -101,15 +101,15 @@ interface Ripple {
   active: boolean
 }
 
-/** The whole backdrop: sky, clouds, hills, water, reeds and the lily pad Pofik sits on. */
+/** The whole backdrop: sky, clouds, hills, water, reeds and the lily pad Gulpsalot sits on. */
 export class Pond {
-  /** Behind Pofik and the insects. */
+  /** Behind Gulpsalot and the insects. */
   readonly back = new Container()
   /** In front of everything except effects (foreground reeds). */
   readonly front = new Container()
   /** Weather drawn over the whole scene: rain, fog, blowing leaves. */
   readonly overlay = new Container()
-  /** Current time-of-day tint, for things drawn outside the pond (Pofik, insects). */
+  /** Current time-of-day tint, for things drawn outside the pond (Gulpsalot, insects). */
   ambient = 0xffffff
   /** What moths circle at night: where the moon settles. */
   readonly light = { x: MOON_X, y: MOON_NIGHT_Y }
@@ -159,7 +159,7 @@ export class Pond {
   private leafAmount = 0
   private windForce = 0
 
-  /** Vertical bob of the main pad, used to keep Pofik seated on it. */
+  /** Vertical bob of the main pad, used to keep Gulpsalot seated on it. */
   padBob = 0
 
   build(layout: Layout) {

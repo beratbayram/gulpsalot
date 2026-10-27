@@ -11,12 +11,12 @@ const BLEED = 400
 
 /**
  * A heron flying over the pond, seen only as its shadow. A call warns first;
- * while the shadow passes, Pofik has to hold still.
+ * while the shadow passes, Gulpsalot has to hold still.
  */
 export class Heron {
   readonly view = new Container()
   state: HeronState = 'idle'
-  /** The pass where Pofik was already pecked, so it only happens once. */
+  /** The pass where Gulpsalot was already pecked, so it only happens once. */
   spotted = false
 
   private readonly dim = new Graphics()

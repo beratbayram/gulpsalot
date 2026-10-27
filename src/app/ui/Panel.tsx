@@ -13,7 +13,7 @@ interface PanelProps {
 
 /**
  * Card that drops in from the top, used by the title screen's side screens.
- * The dim fades out towards the bottom so Pofik stays visible underneath.
+ * The dim fades out towards the bottom so Gulpsalot stays visible underneath.
  */
 export function Panel({ title, onClose, children }: PanelProps) {
   const t = useT()

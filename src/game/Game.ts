@@ -12,7 +12,7 @@ import { Emitter } from './emitter'
 import { Fish } from './entities/Fish'
 import { Heron } from './entities/Heron'
 import { POWER_COLORS, type Insect, type Zone } from './entities/Insect'
-import { Pofik } from './entities/Pofik'
+import { Gulpsalot } from './entities/Gulpsalot'
 import { Swarm, type InsectFilter } from './entities/Swarm'
 import { Tongue, type TongueRoot } from './entities/Tongue'
 import { DebugOverlay } from './fx/DebugOverlay'
@@ -66,7 +66,7 @@ export interface SoundSink {
   bite(): void
   /** The tongue snags on spider silk. */
   snag(): void
-  /** Pofik swallowed a bitter ladybug. */
+  /** Gulpsalot swallowed a bitter ladybug. */
   yuck(): void
   fishLeap(pan: number): void
   splash(pan: number): void
@@ -87,14 +87,14 @@ export interface SoundSink {
   quack(pan: number): void
   /** The far frog croaks along with a big combo. */
   croak(pan: number): void
-  /** Pofik yawns after a long time without a catch. */
+  /** Gulpsalot yawns after a long time without a catch. */
   yawn(): void
 }
 
 export interface BuzzSource {
   /** -1 (left) to 1 (right). */
   pan: number
-  /** 0 (far) to 1 (right next to Pofik). */
+  /** 0 (far) to 1 (right next to Gulpsalot). */
   proximity: number
   speed: number
 }
@@ -223,7 +223,7 @@ export class Game {
   private readonly root = new Container()
   private readonly camera = new Container()
   private readonly pond = new Pond()
-  private readonly pofik = new Pofik()
+  private readonly gulpsalot = new Gulpsalot()
   private readonly tongue = new Tongue()
   private readonly fish = new Fish()
   private readonly heron = new Heron()
@@ -280,7 +280,7 @@ export class Game {
   private hearts = 0
   private timeLeft = 0
   private runStart = 0
-  /** Seconds since the last catch, for Pofik's bored yawn. */
+  /** Seconds since the last catch, for Gulpsalot's bored yawn. */
   private idleTime = 0
   private tickTimer = 0
   private runCatches = 0
@@ -292,7 +292,7 @@ export class Game {
   private windDir = 1
   private wind = 0
   private pendingTap: { x: number; y: number; t: number } | null = null
-  /** Where the tongue starts: the resting tongue in Pofik's mouth. */
+  /** Where the tongue starts: the resting tongue in Gulpsalot's mouth. */
   private readonly mouth: TongueRoot = { x: 0, y: 0, rx: 1, ry: 1, rot: 0 }
   private hudLast: HudFrame = {
     hunger: -1,
@@ -335,7 +335,7 @@ export class Game {
     this.camera.addChild(
       this.pond.back,
       this.fish.shadow,
-      this.pofik.view,
+      this.gulpsalot.view,
       this.tongue.view,
       this.swarm.layer,
       this.fish.view,
@@ -364,7 +364,7 @@ export class Game {
     this.resizeObserver = new ResizeObserver(() => this.resize(host.clientWidth, host.clientHeight))
     this.resizeObserver.observe(host)
 
-    this.pofik.tongueRoot(this.mouth)
+    this.gulpsalot.tongueRoot(this.mouth)
     app.ticker.add(this.frame)
   }
 
@@ -388,7 +388,7 @@ export class Game {
     this.heronTimer = CONFIG.heron.start + this.eventRng.range(0, 12)
     this.fish.cancel()
     this.heron.cancel()
-    this.pofik.setHiding(false)
+    this.gulpsalot.setHiding(false)
     this.bitterShots = 0
     this.burp = 0
     this.endPower(false)
@@ -413,7 +413,7 @@ export class Game {
     // A clean sky, so the insects that count are the same for everyone on a seeded run.
     this.swarm.scatter(this.zone)
     this.swarm.reset(CONFIG.spawn.firstFly)
-    this.pofik.revive()
+    this.gulpsalot.revive()
     this.pond.ripple(this.layout.worldW / 2, this.layout.padY + 6, 1)
     this.opts.sound.start()
     this.opts.progress.record({ type: 'start' })
@@ -451,8 +451,8 @@ export class Game {
     this.stun = 0
     this.resetCombo()
     this.invulnerable = CONFIG.invulnerableAfterContinue
-    this.pofik.revive()
-    this.pofik.setInvulnerable(this.invulnerable)
+    this.gulpsalot.revive()
+    this.gulpsalot.setInvulnerable(this.invulnerable)
     this.swarm.scatter(this.zone, 'hazard')
     this.opts.sound.revive()
     this.particles.burst({
@@ -481,12 +481,12 @@ export class Game {
     this.autoShotTimer = 2
     this.swarm.scatter(this.zone, 'hazard')
     this.heron.cancel()
-    this.pofik.setHiding(false)
+    this.gulpsalot.setHiding(false)
     this.bitterShots = 0
     this.burp = 0
     this.endPower(false)
     this.setWeather('clear')
-    if (this.pofik.isDead) this.pofik.revive()
+    if (this.gulpsalot.isDead) this.gulpsalot.revive()
     this.vignette.setDanger(0)
     this.hints.hide()
     this.ensureRunning()
@@ -494,7 +494,7 @@ export class Game {
   }
 
   setLook(look: Look) {
-    this.pofik.setLook(look)
+    this.gulpsalot.setLook(look)
   }
 
   /** High-contrast hazards: a white and red ring around everything that hurts. */
@@ -577,7 +577,7 @@ export class Game {
       worldH: H,
     }
     this.vignette.resize(width, height)
-    this.pofik.setSeat(W / 2, this.layout.padY - 6 + this.pond.padBob)
+    this.gulpsalot.setSeat(W / 2, this.layout.padY - 6 + this.pond.padBob)
     if (!this.app.ticker.started) this.renderFrame(0)
   }
 
@@ -605,13 +605,13 @@ export class Game {
     this.camera.rotation = this.shake.angle
     this.vignette.update(dt)
     const ambient = this.pond.ambient
-    this.pofik.setAmbient(ambient, this.mode === 'attract' ? 0 : rules.skyPhase(this.runTime))
+    this.gulpsalot.setAmbient(ambient, this.mode === 'attract' ? 0 : rules.skyPhase(this.runTime))
     this.tongue.view.tint = ambient
     this.swarm.setAmbient(
       this.power === 'freeze' ? mixColor(ambient, PALETTE.freeze, 0.45) : ambient,
     )
-    this.pofik.render()
-    this.pofik.tongueRoot(this.mouth)
+    this.gulpsalot.render()
+    this.gulpsalot.tongueRoot(this.mouth)
     this.tongue.render(this.mouth)
     this.swarm.sync()
     this.updateBuzz()
@@ -626,20 +626,20 @@ export class Game {
     this.time += dt
     this.pond.setSky(this.mode === 'attract' ? 0 : rules.skyPhase(this.runTime))
     this.pond.update(dt)
-    this.pofik.setSeat(this.layout.worldW / 2, this.layout.padY - 6 + this.pond.padBob)
+    this.gulpsalot.setSeat(this.layout.worldW / 2, this.layout.padY - 6 + this.pond.padBob)
 
     if (this.mode === 'playing') this.runStep(dt)
     else if (this.mode === 'attract') this.attractStep(dt)
     else if (this.mode === 'dying') this.dyingStep(dt)
 
-    this.pofik.tongueRoot(this.mouth)
+    this.gulpsalot.tongueRoot(this.mouth)
     this.processInput()
     const home = this.tongue.update(dt, this.mouth.x, this.mouth.y)
     this.checkHits()
     for (const it of this.tongue.attached) it.followTip(this.tongue.tipX, this.tongue.tipY)
     if (home) this.onTongueHome()
 
-    // A cold snap slows down everything that flies (and the fish), not Pofik.
+    // A cold snap slows down everything that flies (and the fish), not Gulpsalot.
     const insectDt = this.power === 'freeze' ? dt * CONFIG.power.freeze.scale : dt
     this.updateEnv()
     this.updateFish(insectDt)
@@ -647,7 +647,7 @@ export class Game {
     this.swarm.update(insectDt, this.zone)
     this.updateSparkles(dt)
     this.updateLook()
-    this.pofik.update(dt)
+    this.gulpsalot.update(dt)
     this.particles.update(dt)
     this.floaters.update(dt)
     this.hints.update(dt, this.layout.worldW, this.layout.flyTop)
@@ -672,7 +672,7 @@ export class Game {
     this.idleTime += dt
     if (this.idleTime > CONFIG.yawnAfter && !this.tongue.busy && this.stun <= 0) {
       this.idleTime = 0
-      this.pofik.yawn()
+      this.gulpsalot.yawn()
       this.opts.sound.yawn()
     }
 
@@ -686,7 +686,7 @@ export class Game {
 
     if (this.rules.hunger) this.hunger = rules.drainHunger(this.hunger, dt, this.runTime)
     else this.hunger = CONFIG.hunger.max
-    this.pofik.setHunger(this.hunger / CONFIG.hunger.max)
+    this.gulpsalot.setHunger(this.hunger / CONFIG.hunger.max)
     if (rules.isStarved(this.hunger)) {
       this.die('starved')
       return
@@ -698,7 +698,7 @@ export class Game {
       if (this.growlTimer <= 0) {
         this.growlTimer = 3.2
         this.opts.sound.growl()
-        this.pofik.growl()
+        this.gulpsalot.growl()
       }
       const limit = CONFIG.hunger.max * CONFIG.hunger.critical
       this.vignette.setDanger(1 - this.hunger / limit)
@@ -721,8 +721,8 @@ export class Game {
   }
 
   private attractStep(dt: number) {
-    this.pofik.setHunger(1)
-    this.pofik.setHiding(false)
+    this.gulpsalot.setHunger(1)
+    this.gulpsalot.setHiding(false)
     this.vignette.setDanger(0)
     this.swarm.spawnTick(dt, ATTRACT_RULES, this.zone)
     this.autoShotTimer -= dt
@@ -745,7 +745,7 @@ export class Game {
   private dyingStep(dt: number) {
     if (this.slumpDelay > 0) {
       this.slumpDelay -= dt
-      if (this.slumpDelay <= 0) this.pofik.slump()
+      if (this.slumpDelay <= 0) this.gulpsalot.slump()
     }
     this.dyingTimer -= dt
     if (this.dyingTimer <= 0) {
@@ -774,13 +774,13 @@ export class Game {
     if (this.mode !== 'playing' && this.mode !== 'attract') return
     const rect = this.app.canvas.getBoundingClientRect()
     const p = toWorld(this.layout, e.clientX - rect.left, e.clientY - rect.top)
-    if (this.pofik.containsPoint(p.x, p.y)) {
-      if (this.stun > 0 || this.pofik.isDead) return
+    if (this.gulpsalot.containsPoint(p.x, p.y)) {
+      if (this.stun > 0 || this.gulpsalot.isDead) return
       this.boops = this.time - this.lastBoop < 1.2 ? this.boops + 1 : 1
       this.lastBoop = this.time
       if (this.boops >= 10) this.achieve('boop')
       this.opts.progress.record({ type: 'boop' })
-      this.pofik.boop()
+      this.gulpsalot.boop()
       this.opts.sound.boop()
       this.opts.haptics.light()
       this.particles.burst({
@@ -808,7 +808,9 @@ export class Game {
       return
     }
     const canShoot =
-      (this.mode === 'playing' || this.mode === 'attract') && this.stun <= 0 && !this.pofik.isDead
+      (this.mode === 'playing' || this.mode === 'attract') &&
+      this.stun <= 0 &&
+      !this.gulpsalot.isDead
     if (!canShoot || this.tongue.busy) return
     this.pendingTap = null
     const aim = Tongue.aim(this.mouth.x, this.mouth.y, tap.x, tap.y, this.layout.flyTop - 40)
@@ -825,7 +827,7 @@ export class Game {
     }
     this.tongue.fire(this.mouth.x, this.mouth.y, tx, ty, scored, launch)
     const d = Math.hypot(tx - this.mouth.x, ty - this.mouth.y) || 1
-    this.pofik.shoot((tx - this.mouth.x) / d)
+    this.gulpsalot.shoot((tx - this.mouth.x) / d)
     this.opts.sound.shoot()
     this.stickCount = 0
     this.bullseyes = 0
@@ -954,7 +956,7 @@ export class Game {
     if (spider) this.opts.sound.bite()
     else this.opts.sound.sting()
     this.opts.haptics.sting()
-    this.pofik.sting(CONFIG.stun)
+    this.gulpsalot.sting(CONFIG.stun)
     const duckX = this.pond.startle()
     if (duckX !== null) this.opts.sound.quack(this.panOf(duckX))
     if (bee.kind === 'bee') this.opts.hints.markDone('avoidBee')
@@ -964,7 +966,7 @@ export class Game {
     this.penalize(cost, CONFIG.stun, CAUSE[bee.kind as HazardKind], bee.kind as HazardKind)
   }
 
-  /** A sting, bite or peck: costs belly, stuns Pofik and ends the combo. */
+  /** A sting, bite or peck: costs belly, stuns Gulpsalot and ends the combo. */
   private penalize(hungerCost: number, stun: number, cause: DeathCause, by: StingSource) {
     this.opts.progress.record({ type: 'sting', by })
     this.runStings++
@@ -991,7 +993,7 @@ export class Game {
     const t = this.tongue
     const n = t.attached.length
     const scored = t.scored && this.mode === 'playing'
-    this.pofik.tongueHome()
+    this.gulpsalot.tongueHome()
     if (n === 0) {
       this.opts.sound.retract()
       // A miss ends the combo and the streak.
@@ -1007,7 +1009,7 @@ export class Game {
     }
     t.attached.length = 0
 
-    this.pofik.gulp(n)
+    this.gulpsalot.gulp(n)
     this.opts.sound.gulp(n)
     this.opts.haptics.light()
     this.shake.add(CONFIG.fx.gulpTrauma)
@@ -1129,7 +1131,7 @@ export class Game {
     this.burp = 0
     const { x, y } = this.mouth
     this.score += CONFIG.burp.points
-    this.pofik.burp()
+    this.gulpsalot.burp()
     this.opts.sound.burp()
     this.opts.haptics.heavy()
     this.shake.add(0.35)
@@ -1207,7 +1209,7 @@ export class Game {
   private onYuck() {
     const { x, y } = this.mouth
     this.bitterShots = CONFIG.bitter.shots
-    this.pofik.yuck()
+    this.gulpsalot.yuck()
     this.opts.sound.yuck()
     this.opts.haptics.light()
     this.floaters.show(i18n.t('game.yuck'), x, y - 140, PALETTE.yuck, 30)
@@ -1304,14 +1306,14 @@ export class Game {
     if (cause === 'time') {
       // Rush ran out: not a defeat, so no slump and no sad trombone.
       this.slumpDelay = 0
-      this.pofik.gulp(1)
+      this.gulpsalot.gulp(1)
       this.opts.sound.timeUp()
       this.opts.haptics.light()
     } else {
       const hit = cause !== 'starved' && cause !== 'missed'
       this.slumpDelay = hit ? 0.45 : 0
       if (this.rules.hunger) this.hunger = 0
-      if (!hit) this.pofik.slump()
+      if (!hit) this.gulpsalot.slump()
       this.opts.sound.gameOver()
       this.opts.haptics.heavy()
     }
@@ -1319,7 +1321,7 @@ export class Game {
     this.endPower(false)
     this.swarm.scatter(this.zone)
     this.heron.cancel()
-    this.pofik.setHiding(false)
+    this.gulpsalot.setHiding(false)
     this.vignette.setDanger(0)
     this.hints.hide()
     this.pushHud(true)
@@ -1428,7 +1430,7 @@ export class Game {
   private updateHeron(dt: number) {
     const heron = this.heron
     const event = heron.update(dt)
-    this.pofik.setHiding(heron.busy && this.mode === 'playing')
+    this.gulpsalot.setHiding(heron.busy && this.mode === 'playing')
     if (event === 'done' && !heron.spotted && this.mode === 'playing') this.achieve('heron')
   }
 
@@ -1455,7 +1457,7 @@ export class Game {
     this.vignette.flash()
     this.opts.sound.peck()
     this.opts.haptics.sting()
-    this.pofik.sting(CONFIG.heron.stun)
+    this.gulpsalot.sting(CONFIG.heron.stun)
     this.penalize(CONFIG.heron.peck, CONFIG.heron.stun, 'heron', 'heron')
   }
 
@@ -1498,22 +1500,22 @@ export class Game {
 
   private updateLook() {
     if (this.tongue.busy) {
-      this.pofik.lookAt(this.tongue.tipX, this.tongue.tipY)
+      this.gulpsalot.lookAt(this.tongue.tipX, this.tongue.tipY)
       return
     }
     if (this.mode !== 'playing' && this.mode !== 'attract') {
-      this.pofik.clearLook()
+      this.gulpsalot.clearLook()
       return
     }
     if (this.heron.watching) {
-      this.pofik.lookAt(this.heron.x, this.heron.birdY)
+      this.gulpsalot.lookAt(this.heron.x, this.heron.birdY)
       return
     }
     const target =
       this.swarm.nearestFree('prey', this.mouth.x, this.mouth.y, this.zone) ??
       this.swarm.nearestFree('hazard', this.mouth.x, this.mouth.y, this.zone)
-    if (target) this.pofik.lookAt(target.x, target.y)
-    else this.pofik.clearLook()
+    if (target) this.gulpsalot.lookAt(target.x, target.y)
+    else this.gulpsalot.clearLook()
   }
 
   private updateHints(dt: number) {

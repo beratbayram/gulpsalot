@@ -488,7 +488,7 @@ export class Insect {
     this.x += this.vx * dt
     this.y += this.vy * dt
 
-    // Soft walls while wandering so nobody drifts under the HUD or onto Pofik.
+    // Soft walls while wandering so nobody drifts under the HUD or onto Gulpsalot.
     if (this.state === 'wander' && this.age > 1.2) {
       if (this.y > zone.bottom) this.vy -= (this.y - zone.bottom) * 8 * dt
       if (this.y < zone.top) this.vy += (zone.top - this.y) * 8 * dt

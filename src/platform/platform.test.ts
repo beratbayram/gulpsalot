@@ -16,7 +16,7 @@ function memoryBackend(
 
 describe('KeyValueStore', () => {
   it('loads prefixed keys and ignores others', async () => {
-    const backend = memoryBackend({ 'pofik:v1:best': '12', other: '"x"' })
+    const backend = memoryBackend({ 'gulpsalot:v1:best': '12', other: '"x"' })
     const store = new KeyValueStore(() => backend)
     await store.init()
     expect(store.get('best', 0)).toBe(12)
@@ -28,7 +28,7 @@ describe('KeyValueStore', () => {
     const store = new KeyValueStore(() => backend)
     await store.init()
     store.set('settings', { sound: false })
-    expect(backend.data.get('pofik:v1:settings')).toBe('{"sound":false}')
+    expect(backend.data.get('gulpsalot:v1:settings')).toBe('{"sound":false}')
   })
 
   it('works in memory when storage is unavailable', async () => {
@@ -39,7 +39,7 @@ describe('KeyValueStore', () => {
   })
 
   it('survives a backend that throws on write and corrupted entries', async () => {
-    const backend = memoryBackend({ 'pofik:v1:broken': '{nope' })
+    const backend = memoryBackend({ 'gulpsalot:v1:broken': '{nope' })
     backend.setItem = () => {
       throw new Error('quota')
     }

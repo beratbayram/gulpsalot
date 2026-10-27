@@ -65,9 +65,9 @@ export const en = {
   'challenge.mode': 'Challenge',
   'challenge.dismiss': 'Not now',
 
-  'share.daily': 'Pofik daily · {date}',
-  'share.mode': 'Pofik · {mode}',
-  'share.challenge': 'I scored {n} in Pofik. Same insects, same pond. Can you beat it?',
+  'share.daily': 'Gulpsalot daily · {date}',
+  'share.mode': 'Gulpsalot · {mode}',
+  'share.challenge': 'I scored {n} in Gulpsalot. Same insects, same pond. Can you beat it?',
 
   'settings.soundOff': 'Mute sound',
   'settings.soundOn': 'Turn sound on',
@@ -116,8 +116,8 @@ export const en = {
   'wardrobe.secret': 'Secret look. Hint: {hint}',
   'wardrobe.decorLocked': '{name}, unlocks after {n} missions',
 
-  'secret.nightOwl': 'Pofik is a night owl.',
-  'secret.ticklish': 'Pofik is very ticklish.',
+  'secret.nightOwl': 'Gulpsalot is a night owl.',
+  'secret.ticklish': 'Gulpsalot is very ticklish.',
   'secret.flawless': 'Never miss a shot.',
 
   'decor.reeds': 'Cattails',
@@ -170,7 +170,7 @@ export const en = {
   'mission.rush': 'Score {n} in Rush',
   'mission.sharp': 'Score {n} in Sharpshooter',
   'mission.one.golden': 'Catch a golden fly',
-  'mission.one.burp': 'Make Pofik burp',
+  'mission.one.burp': 'Make Gulpsalot burp',
   'mission.one.daily': 'Finish a daily challenge',
 
   'stats.title': 'Pond log',
@@ -220,7 +220,7 @@ export const en = {
   'ach.daily.title': 'Daily habit',
   'ach.daily.desc': 'Finish a daily challenge.',
   'ach.boop.title': 'Ticklish',
-  'ach.boop.desc': 'Tickle Pofik 10 times in a row.',
+  'ach.boop.desc': 'Tickle Gulpsalot 10 times in a row.',
   'ach.moth.title': 'Moth to a flame',
   'ach.moth.desc': 'Catch a moth.',
   'ach.heron.title': 'Statue',
@@ -230,7 +230,7 @@ export const en = {
   'ach.set.title': 'Matching set',
   'ach.set.desc': 'Catch three of the same insect in a row.',
   'ach.burp.title': 'Excuse me',
-  'ach.burp.desc': 'Eat so much that Pofik burps.',
+  'ach.burp.desc': 'Eat so much that Gulpsalot burps.',
   'ach.streak3.title': 'On fire',
   'ach.streak3.desc': 'Finish the daily challenge three days in a row.',
 } as const

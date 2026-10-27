@@ -27,11 +27,11 @@ const MOUTH_Y = -64
 const OUTLINE = 4
 
 /**
- * Pofik himself. Static body parts are drawn once; the face is redrawn every
+ * Gulpsalot himself. Static body parts are drawn once; the face is redrawn every
  * frame because eyes, lids and mouth change continuously. All motion comes
  * from springs so every reaction overlaps and settles naturally.
  */
-export class Pofik {
+export class Gulpsalot {
   readonly view = new Container()
   private readonly shadow = new Graphics()
   private readonly rig = new Container()
@@ -45,7 +45,7 @@ export class Pofik {
   private readonly hat = new Container()
   private readonly stars = new Container()
   private readonly starList: Graphics[] = []
-  /** Blends Pofik towards red when stung. A plain tint would multiply green into brown. */
+  /** Blends Gulpsalot towards red when stung. A plain tint would multiply green into brown. */
   private readonly hurtFilter = new ColorMatrixFilter()
 
   private readonly squash = new Spring(1, { freq: 3.2, damping: 0.32 })
@@ -56,7 +56,7 @@ export class Pofik {
   private readonly look = new Spring2(0, 0, { freq: 5, damping: 0.62 })
   private readonly mouthOpen = new Spring(0, { freq: 9, damping: 0.75 })
   private readonly cheeks = new Spring(0, { freq: 5, damping: 0.45 })
-  /** The hat lags behind Pofik's moves and wobbles back. */
+  /** The hat lags behind Gulpsalot's moves and wobbles back. */
   private readonly hatTilt = new Spring(0, { freq: 3.4, damping: 0.3 })
 
   private readonly rng = new Rng(3)
@@ -73,7 +73,7 @@ export class Pofik {
   private time = 0
   private dead = false
   private hunger01 = 1
-  /** 0 = day, 1 = dusk, 2 = night: Pofik gets sleepy at dusk and his eyes glow at night. */
+  /** 0 = day, 1 = dusk, 2 = night: Gulpsalot gets sleepy at dusk and his eyes glow at night. */
   private sky = 0
   /** Crouching low while a heron passes. */
   private hiding = false
