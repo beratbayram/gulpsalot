@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { StepClock } from '../game/clock'
-import { clamp, distSqPointSegment, mixColor, remap, sweptHit } from './math'
+import { clamp, distSqPointSegment, mixColor, remap, segmentsIntersect, sweptHit } from './math'
 import { createNoise1D } from './noise'
 import { Rng } from './random'
 import { Spring, Spring2 } from './spring'
@@ -68,6 +68,12 @@ describe('math', () => {
     // The tip jumps 200 units in one step, straight through a fly at x=100.
     expect(sweptHit(0, 0, 200, 0, 100, 10, 15)).toBe(true)
     expect(sweptHit(0, 0, 200, 0, 100, 40, 15)).toBe(false)
+  })
+
+  it('detects crossing segments', () => {
+    expect(segmentsIntersect(0, 0, 10, 10, 0, 10, 10, 0)).toBe(true)
+    expect(segmentsIntersect(0, 0, 10, 0, 0, 5, 10, 5)).toBe(false)
+    expect(segmentsIntersect(0, 0, 4, 4, 6, 0, 10, -4)).toBe(false)
   })
 
   it('mixes colors', () => {

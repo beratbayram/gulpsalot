@@ -6,10 +6,25 @@ import { monetization } from '../../platform/monetization'
 import * as actions from '../actions'
 import { useGame } from '../gameContext'
 import { bouncy, popUp, stagger } from '../motion'
-import { useAppStore } from '../store'
-import { useT } from '../useT'
+import { dailyDate } from '../../game/daily'
+import { locale } from '../../i18n'
+import { share } from '../../platform/share'
+import { challengeUrl, resultLine } from '../sharing'
+import { useAppStore, type LastRun } from '../store'
+import { useLang, useT } from '../useT'
 import { Button, IconButton } from '../ui/Button'
-import { AdIcon, CalendarIcon, FlyIcon, HangerIcon, HomeIcon, RestartIcon } from '../ui/icons'
+import {
+  AdIcon,
+  BoltIcon,
+  CalendarIcon,
+  FlyIcon,
+  HangerIcon,
+  HomeIcon,
+  RestartIcon,
+  ShareIcon,
+  TargetIcon,
+  TimerIcon,
+} from '../ui/icons'
 import { PofikFace } from '../ui/PofikFace'
 
 const COUNT_DELAY = 450
@@ -56,7 +71,7 @@ export function GameOverScreen() {
 
   if (!run) return null
   const canContinue = run.canContinue && monetization.canShowRewarded('continue')
-  const title = run.cause === 'stung' ? t('over.stung') : t('over.starved')
+  const title = t(`over.${run.cause}`)
   const daily = run.mode === 'daily'
 
   const onContinue = async () => {
@@ -105,6 +120,18 @@ export function GameOverScreen() {
                 {t('title.daily')}
               </span>
             )}
+            {run.mode === 'challenge' && (
+              <span className="result__mode">
+                <BoltIcon />
+                {t('challenge.mode')}
+              </span>
+            )}
+            {(run.mode === 'rush' || run.mode === 'sharp') && (
+              <span className="result__mode">
+                {run.mode === 'rush' ? <TimerIcon /> : <TargetIcon />}
+                {t(`mode.${run.mode}.name`)}
+              </span>
+            )}
             <span className="result__label">{t('over.score')}</span>
             <span className="result__value">
               <FlyIcon className="result__icon" />
@@ -134,6 +161,13 @@ export function GameOverScreen() {
                 </m.div>
               )}
             </AnimatePresence>
+            {run.toBeat !== null && counted && (
+              <span className={run.score > run.toBeat ? 'result__beat is-won' : 'result__beat'}>
+                {run.score > run.toBeat
+                  ? t('over.beat', { n: run.toBeat })
+                  : t('over.toBeat', { n: run.toBeat })}
+              </span>
+            )}
             {daily ? (
               <span className="result__best">{t('over.dailyBest', { n: run.dailyBest })}</span>
             ) : (
@@ -197,9 +231,75 @@ export function GameOverScreen() {
                 {t('over.tryOn')}
               </Button>
             )}
+            <ShareButton run={run} compact={run.unlocks.length > 0} />
           </m.div>
         </m.div>
       </m.section>
     </m.div>
+  )
+}
+
+/** The game's address without any parameters. */
+const gameUrl = () => `${window.location.origin}${window.location.pathname}`
+
+/**
+ * Shares the run: a spoiler-free result line for the daily and the other modes,
+ * or a challenge link with this run's seed and score for classic runs.
+ */
+function ShareButton({ run, compact }: { run: LastRun; compact: boolean }) {
+  const t = useT()
+  const lang = useLang()
+  const day = useAppStore((s) => s.run.day)
+  const [copied, setCopied] = useState(false)
+  const challenge = run.mode === 'classic' || run.mode === 'challenge'
+
+  const onShare = async () => {
+    let text: string
+    let url = gameUrl()
+    if (challenge) {
+      text = t('share.challenge', { n: run.score })
+      url = challengeUrl(url, { seed: run.seed, score: run.score })
+    } else {
+      const title =
+        run.mode === 'daily' && day
+          ? t('share.daily', {
+              date: new Intl.DateTimeFormat(locale(lang), {
+                day: 'numeric',
+                month: 'short',
+              }).format(dailyDate(day)),
+            })
+          : t('share.mode', {
+              mode:
+                run.mode === 'daily'
+                  ? t('title.daily')
+                  : t(`mode.${run.mode as 'rush' | 'sharp' | 'zen'}.name`),
+            })
+      text = `${title}\n${resultLine(run)}`
+    }
+    const result = await share(text, url)
+    if (result === 'copied') {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const label = copied
+    ? t('over.copied')
+    : challenge
+      ? run.mode === 'challenge'
+        ? t('over.challengeBack')
+        : t('over.challenge')
+      : t('over.share')
+  if (compact) {
+    return (
+      <IconButton label={label} onPress={() => void onShare()}>
+        <ShareIcon />
+      </IconButton>
+    )
+  }
+  return (
+    <Button variant="secondary" icon={<ShareIcon />} onPress={() => void onShare()}>
+      {label}
+    </Button>
   )
 }

@@ -10,6 +10,11 @@ export const useHudStore = create<HudFrame>()(() => ({
   score: 0,
   critical: false,
   combo: 1,
+  burp: 0,
+  power: null,
+  powerLeft: 0,
+  hearts: 0,
+  timeLeft: 0,
 }))
 
 export const setHud = (frame: HudFrame) => useHudStore.setState(frame)

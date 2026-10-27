@@ -11,6 +11,12 @@ export const ACHIEVEMENTS = [
   'score100',
   'daily',
   'boop',
+  'moth',
+  'heron',
+  'bullseye',
+  'set',
+  'burp',
+  'streak3',
 ] as const
 
 export type AchievementId = (typeof ACHIEVEMENTS)[number]

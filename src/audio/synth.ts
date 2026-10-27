@@ -24,6 +24,10 @@ export interface ToneSpec {
   vibrato?: { rate: number; depth: number }
   filter?: FilterSpec
   pan?: number
+  /** Where the voice plays; the effects bus by default. */
+  out?: AudioNode
+  /** Absolute start time on the audio clock, for scheduled music. Overrides `at`. */
+  when?: number
 }
 
 export interface NoiseSpec {
@@ -33,6 +37,8 @@ export interface NoiseSpec {
   attack?: number
   filter: FilterSpec
   pan?: number
+  out?: AudioNode
+  when?: number
 }
 
 const MIN = 0.0001
@@ -60,14 +66,15 @@ function filterNode(ctx: AudioContext, spec: FilterSpec, t0: number, dur: number
   return f
 }
 
-function output(e: AudioEngine, node: AudioNode, pan: number | undefined) {
+function output(e: AudioEngine, node: AudioNode, pan: number | undefined, out?: AudioNode) {
+  const bus = out ?? e.sfx
   if (pan === undefined || !e.ctx!.createStereoPanner) {
-    node.connect(e.sfx)
+    node.connect(bus)
     return [] as AudioNode[]
   }
   const p = e.ctx!.createStereoPanner()
   p.pan.value = pan
-  node.connect(p).connect(e.sfx)
+  node.connect(p).connect(bus)
   return [p]
 }
 
@@ -75,7 +82,7 @@ function output(e: AudioEngine, node: AudioNode, pan: number | undefined) {
 export function tone(e: AudioEngine, s: ToneSpec, pitch = 1) {
   const ctx = e.ctx
   if (!ctx || ctx.state !== 'running') return
-  const t0 = ctx.currentTime + (s.at ?? 0)
+  const t0 = s.when ?? ctx.currentTime + (s.at ?? 0)
   const osc = ctx.createOscillator()
   osc.type = s.type ?? 'sine'
   osc.frequency.setValueAtTime(s.f0 * pitch, t0)
@@ -94,7 +101,7 @@ export function tone(e: AudioEngine, s: ToneSpec, pitch = 1) {
   const g = ctx.createGain()
   envelope(g.gain, t0, s.attack ?? 0.004, s.dur, s.gain, s.hold)
   last.connect(g)
-  nodes.push(g, ...output(e, g, s.pan))
+  nodes.push(g, ...output(e, g, s.pan, s.out))
 
   let lfo: OscillatorNode | null = null
   if (s.vibrato) {
@@ -116,7 +123,7 @@ export function tone(e: AudioEngine, s: ToneSpec, pitch = 1) {
 export function noise(e: AudioEngine, s: NoiseSpec) {
   const ctx = e.ctx
   if (!ctx || ctx.state !== 'running') return
-  const t0 = ctx.currentTime + (s.at ?? 0)
+  const t0 = s.when ?? ctx.currentTime + (s.at ?? 0)
   const src = ctx.createBufferSource()
   src.buffer = e.noise
   src.loop = true
@@ -124,7 +131,7 @@ export function noise(e: AudioEngine, s: NoiseSpec) {
   const g = ctx.createGain()
   envelope(g.gain, t0, s.attack ?? 0.004, s.dur, s.gain)
   src.connect(f).connect(g)
-  const nodes: AudioNode[] = [src, f, g, ...output(e, g, s.pan)]
+  const nodes: AudioNode[] = [src, f, g, ...output(e, g, s.pan, s.out)]
   src.start(t0, Math.random() * 0.8)
   src.stop(t0 + s.dur + 0.05)
   src.onended = () => nodes.forEach((n) => n.disconnect())

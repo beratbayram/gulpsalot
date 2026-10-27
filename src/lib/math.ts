@@ -45,6 +45,26 @@ export const sweptHit = (
   r: number,
 ) => distSqPointSegment(cx, cy, ax, ay, bx, by) <= r * r
 
+/** True when segment AB crosses segment CD. */
+export function segmentsIntersect(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number,
+  dx: number,
+  dy: number,
+) {
+  const cross = (px: number, py: number, qx: number, qy: number, rx: number, ry: number) =>
+    (qx - px) * (ry - py) - (qy - py) * (rx - px)
+  const d1 = cross(cx, cy, dx, dy, ax, ay)
+  const d2 = cross(cx, cy, dx, dy, bx, by)
+  const d3 = cross(ax, ay, bx, by, cx, cy)
+  const d4 = cross(ax, ay, bx, by, dx, dy)
+  return d1 * d2 < 0 && d3 * d4 < 0
+}
+
 export const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
 
 export const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2

@@ -4,7 +4,15 @@ import { haptics } from '../../platform/haptics'
 import { useAppStore } from '../store'
 import { useT } from '../useT'
 import { IconButton } from './Button'
-import { SoundOffIcon, SoundOnIcon, VibrateIcon, VibrateOffIcon } from './icons'
+import {
+  ContrastIcon,
+  MusicIcon,
+  MusicOffIcon,
+  SoundOffIcon,
+  SoundOnIcon,
+  VibrateIcon,
+  VibrateOffIcon,
+} from './icons'
 
 export function SettingsToggles() {
   const settings = useAppStore((s) => s.settings)
@@ -26,6 +34,18 @@ export function SettingsToggles() {
       >
         {settings.sound ? <SoundOnIcon /> : <SoundOffIcon />}
       </IconButton>
+      <IconButton
+        label={settings.music ? t('settings.musicOff') : t('settings.musicOn')}
+        pressed={settings.music}
+        sound="none"
+        onPress={() => {
+          const next = !settings.music
+          setSetting('music', next)
+          sfx.toggle(next)
+        }}
+      >
+        {settings.music ? <MusicIcon /> : <MusicOffIcon />}
+      </IconButton>
       {haptics.supported && (
         <IconButton
           label={settings.haptics ? t('settings.vibrationOff') : t('settings.vibrationOn')}
@@ -42,6 +62,18 @@ export function SettingsToggles() {
           {settings.haptics ? <VibrateIcon /> : <VibrateOffIcon />}
         </IconButton>
       )}
+      <IconButton
+        label={settings.contrast ? t('settings.contrastOff') : t('settings.contrastOn')}
+        pressed={settings.contrast}
+        sound="none"
+        onPress={() => {
+          const next = !settings.contrast
+          setSetting('contrast', next)
+          sfx.toggle(next)
+        }}
+      >
+        <ContrastIcon />
+      </IconButton>
       <IconButton
         label={t('settings.language')}
         onPress={() => setSetting('lang', nextLang(settings.lang))}

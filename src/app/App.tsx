@@ -3,8 +3,11 @@ import { GameHost } from './GameHost'
 import { Achievements } from './screens/Achievements'
 import { GameOverScreen } from './screens/GameOverScreen'
 import { Hud } from './screens/Hud'
+import { Missions } from './screens/Missions'
+import { Modes } from './screens/Modes'
 import { MockAdOverlay, RotateDevice, Splash } from './screens/Overlays'
 import { PauseMenu } from './screens/PauseMenu'
+import { Stats } from './screens/Stats'
 import { TitleScreen } from './screens/TitleScreen'
 import { Toasts } from './screens/Toasts'
 import { Wardrobe } from './screens/Wardrobe'
@@ -26,6 +29,9 @@ export function App() {
                   {screen === 'title' && <TitleScreen key="title" />}
                   {screen === 'wardrobe' && <Wardrobe key="wardrobe" />}
                   {screen === 'achievements' && <Achievements key="achievements" />}
+                  {screen === 'modes' && <Modes key="modes" />}
+                  {screen === 'missions' && <Missions key="missions" />}
+                  {screen === 'stats' && <Stats key="stats" />}
                   {(screen === 'playing' || screen === 'paused') && <Hud key="hud" />}
                   {screen === 'paused' && <PauseMenu key="pause" />}
                   {screen === 'over' && <GameOverScreen key="over" />}

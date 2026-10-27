@@ -191,8 +191,13 @@ export function createSfx(e: AudioEngine) {
       noise(e, { dur: 0.45, at: 0.08, gain: 0.05, filter: { type: 'highpass', f0: 6500 } })
     },
 
-    /** Dragonflies zip, fireflies chime. */
-    catchSpecial(kind: 'dragonfly' | 'firefly') {
+    /** Dragonflies zip, fireflies chime, moths flutter. */
+    catchSpecial(kind: 'dragonfly' | 'firefly' | 'moth') {
+      if (kind === 'moth') {
+        noise(e, { dur: 0.16, gain: 0.07, filter: { type: 'bandpass', f0: 2200, f1: 900, q: 3 } })
+        tone(e, { type: 'sine', f0: NOTE.E6, f1: NOTE.C6, dur: 0.18, gain: 0.06 })
+        return
+      }
       if (kind === 'dragonfly') {
         tone(e, {
           type: 'square',
@@ -222,6 +227,227 @@ export function createSfx(e: AudioEngine) {
     closeCall() {
       noise(e, { dur: 0.22, gain: 0.12, filter: { type: 'bandpass', f0: 500, f1: 2600, q: 1.4 } })
       tone(e, { type: 'sine', f0: 900, f1: 500, dur: 0.2, at: 0.12, gain: 0.08 })
+    },
+
+    /** Spider bite: a crunchy chomp. */
+    bite() {
+      tone(e, {
+        type: 'square',
+        f0: 220,
+        f1: 70,
+        dur: 0.16,
+        gain: 0.2,
+        filter: { type: 'lowpass', f0: 1400, f1: 300, q: 4 },
+      })
+      noise(e, { dur: 0.07, gain: 0.24, filter: { type: 'bandpass', f0: 1800, q: 1.2 } })
+      noise(e, { dur: 0.06, at: 0.09, gain: 0.16, filter: { type: 'bandpass', f0: 1300, q: 1.2 } })
+      tone(e, { type: 'sine', f0: 320, f1: 150, dur: 0.35, gain: 0.18, at: 0.06 })
+    },
+
+    /** Tongue caught on spider silk: a plucked, rubbery twang. */
+    snag() {
+      const p = vary(0.05)
+      tone(
+        e,
+        {
+          type: 'triangle',
+          f0: 340,
+          f1: 250,
+          dur: 0.32,
+          gain: 0.2,
+          vibrato: { rate: 26, depth: 18 },
+        },
+        p,
+      )
+      noise(e, { dur: 0.05, gain: 0.08, filter: { type: 'highpass', f0: 2500 } })
+    },
+
+    /** A bitter ladybug: "bleh". */
+    yuck() {
+      tone(e, {
+        type: 'sawtooth',
+        f0: 260,
+        f1: 150,
+        dur: 0.36,
+        gain: 0.14,
+        attack: 0.02,
+        filter: { type: 'lowpass', f0: 900, q: 6 },
+        vibrato: { rate: 11, depth: 22 },
+      })
+      tone(e, { type: 'sine', f0: 190, f1: 120, dur: 0.3, gain: 0.12, at: 0.05 })
+    },
+
+    /** A fish breaks the surface. */
+    fishLeap(pan: number) {
+      noise(e, {
+        dur: 0.2,
+        gain: 0.16,
+        pan,
+        filter: { type: 'bandpass', f0: 500, f1: 2400, q: 1.2 },
+      })
+      tone(e, { type: 'sine', f0: 240, f1: 620, dur: 0.12, gain: 0.14, pan })
+    },
+
+    /** Back into the water: a splash and a couple of bloops. */
+    splash(pan: number) {
+      noise(e, { dur: 0.32, gain: 0.2, pan, filter: { type: 'lowpass', f0: 2200, f1: 500 } })
+      tone(e, { type: 'sine', f0: 520, f1: 220, dur: 0.1, gain: 0.12, at: 0.04, pan })
+      tone(e, { type: 'sine', f0: 700, f1: 300, dur: 0.08, gain: 0.08, at: 0.14, pan })
+    },
+
+    /** A heron's harsh call from overhead. */
+    heronCall() {
+      for (const at of [0, 0.32]) {
+        tone(e, {
+          type: 'sawtooth',
+          f0: 470,
+          f1: 300,
+          dur: 0.26,
+          at,
+          gain: 0.12,
+          attack: 0.02,
+          filter: { type: 'bandpass', f0: 1100, q: 2.5 },
+          vibrato: { rate: 34, depth: 30 },
+        })
+      }
+    },
+
+    /** The heron pecks: two hard knocks. */
+    peck() {
+      for (const at of [0, 0.11]) {
+        tone(e, { type: 'sine', f0: 1350, f1: 700, dur: 0.06, at, gain: 0.2 })
+        noise(e, { dur: 0.03, at, gain: 0.18, filter: { type: 'bandpass', f0: 3200, q: 2 } })
+      }
+      tone(e, { type: 'sine', f0: 330, f1: 150, dur: 0.38, gain: 0.18, at: 0.12 })
+    },
+
+    /** Power-up beetle eaten: a rising sweep, colored by the power. */
+    powerUp(kind: 'frenzy' | 'freeze' | 'double') {
+      const notes =
+        kind === 'freeze'
+          ? [NOTE.G6, NOTE.E6, NOTE.C7, NOTE.G7]
+          : kind === 'double'
+            ? [NOTE.C5, NOTE.G5, NOTE.C6, NOTE.G6]
+            : [NOTE.E5, NOTE.G5, NOTE.A5, NOTE.E6]
+      notes.forEach((f, i) =>
+        tone(e, {
+          type: kind === 'freeze' ? 'sine' : 'square',
+          f0: f,
+          dur: 0.14,
+          at: i * 0.06,
+          gain: kind === 'freeze' ? 0.1 : 0.06,
+          filter: { type: 'lowpass', f0: 3600 },
+        }),
+      )
+      if (kind === 'freeze') {
+        noise(e, { dur: 0.5, at: 0.1, gain: 0.05, filter: { type: 'highpass', f0: 7000 } })
+      }
+    },
+
+    /** The power-up wore off. */
+    powerEnd() {
+      tone(e, { type: 'triangle', f0: NOTE.G5, f1: NOTE.C5, dur: 0.22, gain: 0.08 })
+    },
+
+    /** A big cartoon burp. */
+    burp() {
+      tone(e, {
+        type: 'sawtooth',
+        f0: 120,
+        f1: 85,
+        dur: 0.55,
+        gain: 0.3,
+        attack: 0.02,
+        filter: { type: 'lowpass', f0: 700, f1: 380, q: 6 },
+        vibrato: { rate: 22, depth: 18 },
+      })
+      noise(e, { dur: 0.45, gain: 0.08, filter: { type: 'lowpass', f0: 500, q: 5 } })
+    },
+
+    /** Three of a kind in a row: a little three-note chime. */
+    set() {
+      ;[NOTE.E6, NOTE.G6, NOTE.C7].forEach((f, i) =>
+        tone(e, { type: 'triangle', f0: f, dur: 0.12, at: i * 0.07, gain: 0.1 }),
+      )
+    },
+
+    /** Dead-center hit: a short, sharp ding. */
+    bullseye() {
+      tone(e, { type: 'sine', f0: NOTE.C7, dur: 0.18, gain: 0.1, attack: 0.002 })
+      tone(e, { type: 'sine', f0: NOTE.G7, dur: 0.12, gain: 0.05, at: 0.02 })
+    },
+
+    /** Rush is over: a referee whistle and a cheerful hop. */
+    timeUp() {
+      tone(e, {
+        type: 'sine',
+        f0: 2300,
+        dur: 0.5,
+        gain: 0.12,
+        attack: 0.01,
+        hold: 0.6,
+        vibrato: { rate: 30, depth: 120 },
+      })
+      ;[NOTE.C6, NOTE.G5, NOTE.C6].forEach((f, i) =>
+        tone(e, { type: 'triangle', f0: f, dur: 0.12, at: 0.55 + i * 0.1, gain: 0.12 }),
+      )
+    },
+
+    /** Sharpshooter miss: a heart cracks. */
+    heartLost() {
+      tone(e, { type: 'triangle', f0: NOTE.E5, f1: NOTE.C5 / 2, dur: 0.32, gain: 0.16 })
+      noise(e, { dur: 0.06, gain: 0.1, filter: { type: 'bandpass', f0: 2600, q: 2 } })
+    },
+
+    /** The duck on the far water: a startled "kwak kwak". */
+    quack(pan: number) {
+      for (const at of [0, 0.16]) {
+        tone(e, {
+          type: 'sawtooth',
+          f0: 560,
+          f1: 380,
+          dur: 0.12,
+          at,
+          gain: 0.07,
+          pan,
+          filter: { type: 'bandpass', f0: 1300, q: 3 },
+        })
+      }
+    },
+
+    /** The far frog: a low two-part "rib-bit". */
+    croak(pan: number) {
+      for (const [at, f] of [
+        [0, 150],
+        [0.14, 190],
+      ] as const) {
+        tone(e, {
+          type: 'square',
+          f0: f,
+          f1: f * 0.8,
+          dur: 0.11,
+          at,
+          gain: 0.08,
+          pan,
+          filter: { type: 'lowpass', f0: 900, q: 5 },
+          vibrato: { rate: 40, depth: 20 },
+        })
+      }
+    },
+
+    /** A long, sleepy yawn that slides down. */
+    yawn() {
+      tone(e, {
+        type: 'triangle',
+        f0: 520,
+        f1: 210,
+        dur: 1.05,
+        gain: 0.1,
+        attack: 0.18,
+        filter: { type: 'lowpass', f0: 1400, f1: 500, q: 2 },
+        vibrato: { rate: 5, depth: 8 },
+      })
+      noise(e, { dur: 0.9, gain: 0.03, attack: 0.2, filter: { type: 'bandpass', f0: 800, q: 1 } })
     },
 
     /** Achievement unlocked: a short fanfare. */

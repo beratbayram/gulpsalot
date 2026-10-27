@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { audio, buzz, sfx } from '../audio'
+import { audio, buzz, music, sfx, weather } from '../audio'
 import { Game } from '../game/Game'
 import { setLang } from '../i18n'
+import { dailyKey, nextReminder } from '../game/daily'
+import { setDailyBadge } from '../platform/badge'
 import { haptics } from '../platform/haptics'
 import { landscapePhoneQuery, prefersReducedMotion, watchVisibility } from '../platform/lifecycle'
-import { monetization } from '../platform/monetization'
+import { notifications } from '../platform/notifications'
+import { wakeLock } from '../platform/wakeLock'
 import * as actions from './actions'
 import { GameContext } from './gameContext'
 import { setHud } from './hudStore'
-import { useAppStore } from './store'
+import { dailyBestFor, useAppStore } from './store'
 
 function readOptions() {
   const params = new URLSearchParams(window.location.search)
@@ -26,6 +29,8 @@ export function GameHost({ children }: { children: ReactNode }) {
   const [game, setGame] = useState<Game | null>(null)
   const settings = useAppStore((s) => s.settings)
   const look = useAppStore((s) => s.look)
+  const decor = useAppStore((s) => s.decor)
+  const best = useAppStore((s) => s.best)
 
   useEffect(() => {
     const host = hostRef.current
@@ -37,6 +42,8 @@ export function GameHost({ children }: { children: ReactNode }) {
     void Game.create(host, {
       sound: sfx,
       buzz,
+      ambience: weather,
+      music,
       haptics,
       hud: setHud,
       hints: {
@@ -47,6 +54,7 @@ export function GameHost({ children }: { children: ReactNode }) {
         has: (id) => useAppStore.getState().achievements.includes(id),
         unlock: (id) => useAppStore.getState().unlockAchievement(id),
       },
+      progress: { record: (event) => useAppStore.getState().record(event) },
       reducedMotion: prefersReducedMotion(),
       ...options,
     }).then((g) => {
@@ -69,6 +77,7 @@ export function GameHost({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     audio.setMuted(!settings.sound)
+    audio.setMusic(settings.music)
     haptics.setEnabled(settings.haptics)
     setLang(settings.lang)
   }, [settings])
@@ -78,11 +87,23 @@ export function GameHost({ children }: { children: ReactNode }) {
   }, [game, look])
 
   useEffect(() => {
+    game?.setContrast(settings.contrast)
+  }, [game, settings.contrast])
+
+  useEffect(() => {
+    game?.setDecor(decor, best)
+  }, [game, decor, best])
+
+  useEffect(() => {
     if (!game) return
-    const offOver = game.events.on('runOver', ({ score, cause, canContinue }) => {
+    const offOver = game.events.on('runOver', (result) => {
       const store = useAppStore.getState()
-      store.recordRun(score, cause, canContinue)
-      monetization.gameplayStop()
+      store.recordRun(result)
+      actions.gameplayStop()
+      if (store.run.mode === 'daily') {
+        updateBadge()
+        void notifications.scheduleDailyReminder(nextReminder(new Date()))
+      }
       store.setScreen('over')
     })
 
@@ -93,10 +114,17 @@ export function GameHost({ children }: { children: ReactNode }) {
       () => {
         pauseIfPlaying()
         buzz.silence()
+        weather.silence()
         audio.suspend()
+        updateBadge()
       },
-      () => audio.resume(),
+      () => {
+        audio.resume()
+        wakeLock.restore()
+        updateBadge()
+      },
     )
+    updateBadge()
     const landscape = window.matchMedia(landscapePhoneQuery)
     const onRotate = () => landscape.matches && pauseIfPlaying()
     landscape.addEventListener('change', onRotate)
@@ -114,4 +142,9 @@ export function GameHost({ children }: { children: ReactNode }) {
       {children}
     </GameContext.Provider>
   )
+}
+
+/** Badge on the installed app's icon while today's daily hasn't been played. */
+function updateBadge() {
+  setDailyBadge(dailyBestFor(useAppStore.getState().daily, dailyKey()) === 0)
 }

@@ -34,7 +34,7 @@ export function HungerBar() {
     let trailHold = 0
     let last = performance.now()
 
-    const apply = (hunger: number, critical: boolean) => {
+    const apply = (hunger: number, critical: boolean, burp: number) => {
       const now = performance.now()
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
@@ -49,13 +49,14 @@ export function HungerBar() {
       el.style.setProperty('--hunger', hunger.toFixed(4))
       el.style.setProperty('--trail', trail.toFixed(4))
       el.style.setProperty('--hunger-color', hungerColor(hunger))
+      el.style.setProperty('--burp', burp.toFixed(3))
       el.classList.toggle('is-critical', critical)
       setWorried(hunger < 0.3)
     }
 
     const s = useHudStore.getState()
-    apply(s.hunger, s.critical)
-    return useHudStore.subscribe((state) => apply(state.hunger, state.critical))
+    apply(s.hunger, s.critical, s.burp)
+    return useHudStore.subscribe((state) => apply(state.hunger, state.critical, state.burp))
   }, [])
 
   useEffect(() => {
@@ -105,6 +106,9 @@ export function HungerBar() {
         <div className="hunger__trail" />
         <div className="hunger__fill" />
         <div className="hunger__shine" />
+      </div>
+      <div className="burp" aria-hidden>
+        <div className="burp__fill" />
       </div>
     </div>
   )

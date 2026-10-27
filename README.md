@@ -4,9 +4,16 @@ A portrait, mobile-first web game. Pofik is a chubby frog on a lily pad: tap any
 and his springy tongue shoots there. Flies fill his belly, bees sting. The belly drains
 over time and the run ends when it is empty.
 
-Rare golden flies, zig-zagging dragonflies and (once the sky turns to night) fireflies
-are worth more, and quick catches build a combo multiplier. There is a daily challenge,
-skins and hats unlocked by best score, achievements, and a Turkish and English UI.
+Rare golden flies, zig-zagging dragonflies and (once the sky turns to night) fireflies and
+moths are worth more, and quick catches build a combo multiplier. Wasps chase the tongue,
+spiders hang on sticky silk, ladybugs taste bitter, a fish snatches low flyers and a
+heron's shadow means "hold still". Power-up beetles, bullseyes, matching sets and a burp
+meter add to the score; each run has its own weather.
+
+Besides the classic mode there are a Zen pond, a 60 second Rush and a Sharpshooter mode,
+a daily challenge with a streak and a shareable result, friend challenges by link,
+missions, lifetime stats, skins and hats (some secret), pond decorations, achievements,
+synthesized music that follows the combo, and a Turkish and English UI.
 
 Built with React, PixiJS and TypeScript. Ships as an installable, offline-capable PWA.
 Android and iOS builds come later through Capacitor (see below).
@@ -44,6 +51,9 @@ to judge feel, sound and haptics.
 | `?ads=mock`  | Fake rewarded/interstitial ads (default in dev)                    |
 | `?ads=none`  | No ads (default in production)                                     |
 
+A shared challenge link adds `?challenge=<seed>.<score>`; the game keeps it for the title
+screen and removes it from the address.
+
 ## How it is put together
 
 ```
@@ -68,14 +78,18 @@ src/
 - **All art is code.** Pofik, insects and the pond are drawn with Pixi Graphics; the UI
   uses the same palette (`src/game/draw/palette.ts`, mirrored in `tokens.css`).
 - **All sound is synthesized** with oscillators and filtered noise
-  (`src/audio/sfx.ts`). The nearest fly and bee each drive a quiet, panned buzz.
+  (`src/audio/sfx.ts`). The nearest fly and bee each drive a quiet, panned buzz. The
+  music (`src/audio/music.ts`) is made up on the fly: pad and bass always play, and
+  percussion, melody, arpeggio and sparkles join as the combo climbs. Rain and wind have
+  their own loops (`src/audio/weather.ts`).
 
 ### Tuning
 
 Gameplay and feel numbers live in `src/game/config.ts`: hunger drain, points and food per
-insect, combo window and steps, sting penalty, spawn curves (including when golden flies,
-dragonflies and fireflies show up), the day to night timeline, tongue springs, shake and
-hit-stop strengths. The difficulty curve is in `src/game/rules.ts` and covered by tests.
+insect, combo window and steps, sting and bite penalties, spawn curves for every insect,
+power-up durations, burp, set and bullseye bonuses, fish and heron timing, weather odds,
+the day to night timeline, tongue springs, shake and hit-stop strengths. Mode rules are in
+`src/game/modes.ts`. The difficulty curve is in `src/game/rules.ts` and covered by tests.
 Skin and hat unlock scores are in `src/game/cosmetics.ts`.
 
 ### Progress and content
@@ -83,14 +97,35 @@ Skin and hat unlock scores are in `src/game/cosmetics.ts`.
 - **Combos.** Insects caught in quick succession (a multi-catch counts all at once) build a
   x2 to x5 score multiplier. The combo clock pauses while the tongue is out; a miss or a
   sting ends it.
-- **Daily challenge.** A run seeded from the local date (`src/game/daily.ts`). Spawns use
-  their own RNG stream, and every spawn attempt draws the same numbers whether or not it
-  is capped, so everyone gets the same insects in the same places regardless of frame rate
-  or how they play. Effects use a separate stream. No continue on daily runs.
+- **Bonuses.** Three of the same insect in a row is a set; a dead-center hit is a
+  bullseye; food eaten on a full belly fills a burp meter, and a full meter's burp sends
+  every hazard away. Power-up beetles give a fly frenzy, a slow-motion cold snap or double
+  points for a few seconds.
+- **Modes** (`src/game/modes.ts`). Classic; Zen pond (no hazards, hunger or score); Rush
+  (60 seconds, stings cost points); Sharpshooter (classic plus three hearts, every miss
+  costs one). Rush and Sharpshooter keep their own best scores.
+- **Daily challenge.** A run seeded from the local date (`src/game/daily.ts`). Each insect
+  kind has its own spawn stream seeded from the run seed, and every spawn attempt draws the
+  same numbers whether or not it is capped, so everyone gets the same insects in the same
+  places regardless of frame rate or how they play. Pond events (fish, heron) and the
+  weather come from the seed too, through their own generators; effects use a separate
+  stream. No continue on daily runs. Finishing dailies on consecutive days builds a streak,
+  and the result can be shared as a spoiler-free emoji line.
+- **Friend challenges.** After a classic run the share button makes a link with that run's
+  seed and score (`src/app/sharing.ts`); opening it offers the same run with the score to
+  beat.
+- **Missions** (`src/game/missions.ts`): three active goals from an endless list, counted
+  in every mode but Zen. Finished missions unlock pond decorations (cattails, a lantern
+  that moths circle, a score sign).
+- **Lifetime stats** (`src/game/progress.ts`): insects per kind, ouches, play time, bests.
+  The game reports run events through `GameOptions.progress`; the app keeps stats,
+  missions and secret looks in its store.
 - **Achievements** are listed in `src/game/achievements.ts`. The game unlocks them through
   `GameOptions.achievements`; the app stores them and shows a toast.
 - **Skins and hats.** Hats are plain shape data (`src/game/draw/hats.ts`) drawn by both Pixi
-  and the SVG face in the UI, so the wardrobe previews match the game.
+  and the SVG face in the UI, so the wardrobe previews match the game. Three looks are
+  secret, unlocked by playing after midnight, tickling Pofik 50 times and a run of 20
+  catches without a miss.
 - **Languages.** `src/i18n/en.ts` defines the keys; `tr.ts` must cover all of them (a test
   checks this, placeholders included). The language follows the device until the player
   picks one with the EN/TR button.
@@ -102,6 +137,9 @@ Skin and hat unlock scores are in `src/game/cosmetics.ts`.
   it is unsupported; native haptics come with Capacitor.
 - Portrait only. Phones held sideways see a "turn your phone" overlay and the game pauses.
 - The game pauses automatically when the tab or app goes to the background.
+- The screen stays on during a run (Screen Wake Lock, where supported).
+- Installed PWAs show an icon badge while today's daily is waiting (Badging API, where
+  supported).
 - On desktop the game is shown in a phone-shaped frame.
 
 ## Deploying to beratbayram.com/pofik
@@ -147,6 +185,10 @@ in `src/platform/`. Rough steps:
    - `platform/haptics.ts`: `@capacitor/haptics`
    - `platform/monetization/`: an ad SDK and store billing implementing `Monetization`
    - `platform/lifecycle.ts`: `@capacitor/app` pause/resume events
+   - `platform/notifications.ts`: `@capacitor/local-notifications` for the daily reminder
+     (the web build has a no-op; the game already schedules it after each daily)
+   - `platform/share.ts`: `@capacitor/share`
+   - `platform/wakeLock.ts`: a keep-awake plugin
 4. Lock orientation and hide the status bar in the native projects.
 5. `pnpm build && pnpm exec cap sync`
 

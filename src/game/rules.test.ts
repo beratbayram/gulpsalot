@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CONFIG } from './config'
+import { MODES, modeDifficulty, stingScore } from './modes'
+import { WEATHERS, fogAt, pickWeather, windSide } from './weather'
 import {
   comboMultiplier,
   difficulty,
@@ -8,11 +10,15 @@ import {
   feed,
   isCritical,
   isStarved,
+  burpGain,
   preyValue,
   rampProgress,
   revive,
+  setBonus,
   skyPhase,
   sting,
+  trackSets,
+  type SetState,
 } from './rules'
 
 describe('hunger', () => {
@@ -150,5 +156,80 @@ describe('difficulty', () => {
     const end = difficulty(10_000)
     expect(end.goldenChance).toBeLessThan(0.1)
     expect(end.goldenSpeed).toBeGreaterThan(end.fly.speed)
+  })
+})
+
+describe('sets', () => {
+  it('completes a set every three of the same kind in a row', () => {
+    const state: SetState = { kind: null, count: 0 }
+    expect(trackSets(state, ['fly', 'fly'])).toEqual([])
+    expect(trackSets(state, ['fly'])).toEqual(['fly'])
+    expect(trackSets(state, ['fly', 'fly', 'fly'])).toEqual(['fly'])
+  })
+
+  it('starts over when a different kind is caught', () => {
+    const state: SetState = { kind: null, count: 0 }
+    expect(trackSets(state, ['fly', 'fly', 'moth', 'moth'])).toEqual([])
+    expect(trackSets(state, ['moth'])).toEqual(['moth'])
+  })
+
+  it('pays more for sets of more valuable insects', () => {
+    expect(setBonus(['dragonfly'])).toBeGreaterThan(setBonus(['fly']))
+    expect(setBonus([])).toBe(0)
+  })
+})
+
+describe('burp', () => {
+  it('only overflow from a full belly fills the meter', () => {
+    expect(burpGain(50, 20)).toBe(0)
+    expect(burpGain(CONFIG.hunger.max, CONFIG.burp.capacity)).toBe(1)
+    expect(burpGain(CONFIG.hunger.max - 10, 40)).toBeCloseTo(30 / CONFIG.burp.capacity)
+  })
+})
+
+describe('new insects', () => {
+  it('bring wasps and spiders in later than bees, and moths only at night', () => {
+    expect(CONFIG.spawn.wasp.start).toBeGreaterThan(CONFIG.spawn.beeStart)
+    expect(CONFIG.spawn.spider.start).toBeGreaterThan(CONFIG.spawn.beeStart)
+    expect(difficulty(CONFIG.sky.duskStart).moth.active).toBe(false)
+    expect(difficulty(CONFIG.sky.nightEnd).moth.active).toBe(true)
+  })
+
+  it('ladybugs are worth nothing', () => {
+    expect(preyValue(['ladybug'])).toEqual({ points: 0, food: 0 })
+  })
+})
+
+describe('weather', () => {
+  it('is the same for everyone on the same seed', () => {
+    expect(pickWeather(12345)).toBe(pickWeather(12345))
+    expect(windSide(99)).toBe(windSide(99))
+  })
+
+  it('comes up in every kind across many seeds', () => {
+    const seen = new Set<string>()
+    for (let seed = 1; seed < 400; seed++) seen.add(pickWeather(seed))
+    expect([...seen].sort()).toEqual([...WEATHERS].sort())
+  })
+
+  it('morning fog thins out and never goes negative', () => {
+    expect(fogAt(0)).toBe(1)
+    expect(fogAt(1000)).toBeGreaterThan(0)
+    expect(fogAt(1000)).toBeLessThan(fogAt(0))
+  })
+})
+
+describe('modes', () => {
+  it('zen has no hazards or power-ups; the others keep them', () => {
+    const d = difficulty(200)
+    const zen = modeDifficulty(MODES.zen, d)
+    expect(zen.bee.active || zen.wasp.active || zen.spider.active || zen.beetle.active).toBe(false)
+    expect(zen.fly).toEqual(d.fly)
+    expect(modeDifficulty(MODES.rush, d)).toBe(d)
+  })
+
+  it('a sting in rush costs points but never goes below zero', () => {
+    expect(stingScore(MODES.rush, 20)).toBe(20 - MODES.rush.stingPoints)
+    expect(stingScore(MODES.rush, 1)).toBe(0)
   })
 })

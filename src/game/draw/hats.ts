@@ -112,6 +112,45 @@ export const HAT_ART: Record<Exclude<HatId, 'none'>, HatArt> = {
       { type: 'circle', x: 17, y: 6, r: 2.4, fill: 0x5fb4ec },
     ],
   },
+  // Floppy striped sleeping cap that droops to one side, with a pompom.
+  nightcap: {
+    x: 0,
+    y: -2,
+    rotation: -0.1,
+    shapes: [
+      {
+        type: 'path',
+        d: 'M-30 8 C-26 -24 10 -40 30 -22 C40 -12 44 4 40 16 C34 4 26 -6 18 -6 C24 0 28 6 30 8 Z',
+        fill: 0x5f7fe0,
+        outline: true,
+      },
+      { type: 'path', d: 'M-14 -14 C-6 -22 6 -24 14 -20', line: 0xa8bcff, width: 5 },
+      { type: 'path', d: 'M-22 -2 C-12 -12 4 -14 16 -10', line: 0xa8bcff, width: 5 },
+      { type: 'path', d: 'M-32 4 Q0 -4 32 6 L31 14 Q0 6 -31 12 Z', fill: 0xf4f7ff, outline: true },
+      { type: 'circle', x: 41, y: 18, r: 7, fill: 0xf4f7ff, outline: true },
+    ],
+  },
+  // A big feather tucked behind one eye, the tickle trophy.
+  feather: {
+    x: 26,
+    y: 2,
+    rotation: 0.35,
+    shapes: [
+      {
+        type: 'path',
+        d: 'M0 10 C-14 -6 -12 -40 6 -62 C18 -40 16 -8 0 10 Z',
+        fill: 0xff9fc4,
+        outline: true,
+      },
+      { type: 'path', d: 'M0 10 C2 -14 4 -38 6 -60', line: 0xd9558c, width: 2.5 },
+      {
+        type: 'path',
+        d: 'M2 -20 L-8 -28 M3 -34 L-6 -42 M3 -20 L12 -30 M4 -36 L11 -44',
+        line: 0xd9558c,
+        width: 1.8,
+      },
+    ],
+  },
 }
 
 /** Where the hat sits in Pofik's body space (the top of his head). */

@@ -46,6 +46,10 @@ export class Tongue {
   scored = false
   /** Already stung on this shot, so it can't be stung twice. */
   stung = false
+  /** Caught on spider silk this shot; it comes straight back. */
+  snagged = false
+  /** Sideways wind on the rope, in world units per second squared. */
+  wind = 0
   readonly attached: Insect[] = []
 
   private vx = 0
@@ -94,10 +98,19 @@ export class Tongue {
     return { x: tx, y: ty }
   }
 
-  fire(mouthX: number, mouthY: number, targetX: number, targetY: number, scored: boolean) {
+  /** `launchScale` below 1 makes a lazier, slower shot (after eating something bitter). */
+  fire(
+    mouthX: number,
+    mouthY: number,
+    targetX: number,
+    targetY: number,
+    scored: boolean,
+    launchScale = 1,
+  ) {
     this.state = 'out'
     this.scored = scored
     this.stung = false
+    this.snagged = false
     this.attached.length = 0
     this.tipX = this.prevTipX = mouthX
     this.tipY = this.prevTipY = mouthY
@@ -105,7 +118,7 @@ export class Tongue {
     this.targetY = targetY
     this.vx = 0
     this.vy = 0
-    this.freq = T.launch.freq
+    this.freq = T.launch.freq * launchScale
     this.damping = T.launch.damping
     this.outTime = 0
     this.dwell = 0
@@ -124,6 +137,15 @@ export class Tongue {
     if (this.state === 'idle') return
     this.stung = true
     this.startBack(T.yank.freq, T.yank.damping)
+  }
+
+  /** Stuck on spider silk: stops dead and pulls back, keeping anything already caught. */
+  snag() {
+    if (this.state === 'idle' || this.snagged) return
+    this.snagged = true
+    this.vx *= 0.1
+    this.vy *= 0.1
+    this.startBack(T.retractLoaded.freq, T.retractLoaded.damping)
   }
 
   /**
@@ -148,7 +170,8 @@ export class Tongue {
       if (!this.reached && (Math.hypot(dx, dy) < 14 || dx * this.dirX + dy * this.dirY > 0)) {
         this.reached = true
       }
-      if (this.reached || this.outTime > T.maxOut) this.dwell += dt
+      if (this.reached || this.outTime > T.maxOut / Math.min(1, this.freq / T.launch.freq))
+        this.dwell += dt
       if (this.dwell >= T.dwell) {
         if (this.attached.length) this.startBack(T.retractLoaded.freq, T.retractLoaded.damping)
         else this.startBack(T.retract.freq, T.retract.damping)
@@ -316,12 +339,13 @@ export class Tongue {
     py[N - 1] = oy[N - 1] = this.tipY
 
     const g = ROPE_GRAVITY * dt * dt
+    const w = this.wind * 2.5 * dt * dt
     for (let i = 1; i < N - 1; i++) {
       const vx = (px[i] - ox[i]) * ROPE_DAMPING
       const vy = (py[i] - oy[i]) * ROPE_DAMPING
       ox[i] = px[i]
       oy[i] = py[i]
-      px[i] += vx
+      px[i] += vx + w
       py[i] += vy + g
     }
 

@@ -1,5 +1,13 @@
-import { ColorMatrixFilter, Container, FillGradient, Graphics, GraphicsPath } from 'pixi.js'
-import { TAU, bump, clamp, lerp } from '../../lib/math'
+import {
+  ColorMatrixFilter,
+  Container,
+  FillGradient,
+  Graphics,
+  GraphicsPath,
+  Sprite,
+  Texture,
+} from 'pixi.js'
+import { TAU, bump, clamp, lerp, mixColor } from '../../lib/math'
 import { createNoise1D } from '../../lib/noise'
 import { Rng } from '../../lib/random'
 import { Spring, Spring2 } from '../../lib/spring'
@@ -8,7 +16,7 @@ import { HAT_ANCHOR, HAT_ART, HAT_OUTLINE, type HatArt } from '../draw/hats'
 import { PALETTE } from '../draw/palette'
 import type { TongueRoot } from './Tongue'
 
-type Expression = 'normal' | 'happy' | 'boop' | 'stunned'
+type Expression = 'normal' | 'happy' | 'boop' | 'stunned' | 'yuck' | 'burp' | 'yawn'
 
 const EYE_X = 36
 const EYE_Y = -114
@@ -30,6 +38,10 @@ export class Pofik {
   private readonly body = new Graphics()
   private readonly belly = new Graphics()
   private readonly face = new Graphics()
+  /** Eye whites and pupils, apart from the face so they can glow at night. */
+  private readonly eyes = new Graphics()
+  /** Soft halos around the eyes, faded in after dark. */
+  private readonly eyeGlow = new Container()
   private readonly hat = new Container()
   private readonly stars = new Container()
   private readonly starList: Graphics[] = []
@@ -61,6 +73,10 @@ export class Pofik {
   private time = 0
   private dead = false
   private hunger01 = 1
+  /** 0 = day, 1 = dusk, 2 = night: Pofik gets sleepy at dusk and his eyes glow at night. */
+  private sky = 0
+  /** Crouching low while a heron passes. */
+  private hiding = false
   private lookX = 0
   private lookY = 0
   private hasLookTarget = false
@@ -98,7 +114,17 @@ export class Pofik {
       0,
     ]
     this.hat.position.set(HAT_ANCHOR.x, HAT_ANCHOR.y)
-    this.rig.addChild(this.body, this.belly, this.face, this.hat)
+    for (const side of [-1, 1]) {
+      const halo = new Sprite(haloTexture())
+      halo.anchor.set(0.5)
+      halo.blendMode = 'add'
+      halo.tint = 0xfff2b0
+      halo.scale.set(0.6)
+      halo.position.set(side * EYE_X, EYE_Y)
+      this.eyeGlow.addChild(halo)
+    }
+    this.eyeGlow.alpha = 0
+    this.rig.addChild(this.body, this.belly, this.eyeGlow, this.eyes, this.face, this.hat)
     this.view.addChild(this.shadow, this.rig, this.stars)
   }
 
@@ -214,6 +240,54 @@ export class Pofik {
     this.squash.kick(-0.9)
   }
 
+  /** Swallowed something bitter (a ladybug). */
+  yuck() {
+    this.setExpression('yuck', 0.95)
+    this.squash.kick(2.4)
+    this.lean.kick(this.rng.sign() * 1.6)
+    this.hatTilt.kick(this.rng.sign() * 4)
+    this.cheeks.kick(-4)
+  }
+
+  /** A big burp: belly squeezes, mouth pops wide open. */
+  burp() {
+    this.setExpression('burp', 0.7)
+    this.bellyBulge.kick(-5)
+    this.squash.kick(4)
+    this.hop.kick(-140)
+    this.hatTilt.kick(this.rng.sign() * 6)
+    this.blush = 1
+  }
+
+  /** A big bored yawn, after a long time without a catch. */
+  yawn() {
+    if (this.expression !== 'normal' || this.dead) return
+    this.setExpression('yawn', 1.3)
+    this.squash.kick(-1.4)
+    this.hatTilt.kick(this.rng.sign() * 1.5)
+  }
+
+  /**
+   * Time-of-day tint for everything but the eyes, which stay bright after dark
+   * so they seem to glow.
+   */
+  setAmbient(color: number, sky: number) {
+    this.sky = sky
+    const night = clamp(sky - 1, 0, 1)
+    for (const part of [this.body, this.belly, this.face, this.hat, this.shadow]) part.tint = color
+    this.eyes.tint = mixColor(color, PALETTE.white, night * 0.85)
+    this.eyeGlow.alpha = night * 0.4
+  }
+
+  /** Crouch and keep still while a heron's shadow passes. */
+  setHiding(on: boolean) {
+    if (on === this.hiding) return
+    this.hiding = on
+    if (this.dead) return
+    this.squash.target = on ? 0.86 : 1
+    this.squash.kick(on ? -1.6 : 2)
+  }
+
   slump() {
     this.dead = true
     this.stunTimer = 0
@@ -226,6 +300,7 @@ export class Pofik {
   revive() {
     const wasDead = this.dead
     this.dead = false
+    this.hiding = false
     this.flash = 0
     this.stunTimer = 0
     this.squash.target = 1
@@ -330,15 +405,17 @@ export class Pofik {
   }
 
   private updateBlink(dt: number) {
+    // Slow, heavy blinks once the sun goes down.
+    const dusk = clamp(this.sky, 0, 1)
     if (this.blinkT >= 0) {
-      this.blinkT += dt / 0.14
+      this.blinkT += dt / lerp(0.14, 0.32, dusk)
       if (this.blinkT >= 1) {
         if (this.doubleBlink) {
           this.doubleBlink = false
           this.blinkT = 0
         } else {
           this.blinkT = -1
-          this.blinkTimer = this.rng.range(1.8, 5)
+          this.blinkTimer = this.rng.range(1.8, 5) * lerp(1, 0.7, dusk)
         }
       }
       return
@@ -351,7 +428,8 @@ export class Pofik {
   }
 
   private lidLevel() {
-    let level = this.dead ? 0.6 : this.hunger01 < 0.25 ? 0.32 : 0.06
+    const sleepy = 0.06 + 0.16 * clamp(this.sky, 0, 1)
+    let level = this.dead ? 0.6 : this.hunger01 < 0.25 ? 0.32 : sleepy
     if (this.blinkT >= 0) level = lerp(level, 1, bump(this.blinkT))
     return level
   }
@@ -415,12 +493,11 @@ export class Pofik {
     g.circle(-EYE_X, EYE_Y + 2, 27).fill(gradient)
     g.circle(EYE_X, EYE_Y + 2, 27).fill(gradient)
 
-    // Spots and a soft highlight.
-    g.circle(-58, -60, 6).fill(skin.bodySpot)
+    // Spots, kept clear of the eyes and the cheek blush.
+    g.circle(-60, -80, 5).fill(skin.bodySpot)
     g.circle(-64, -42, 4).fill(skin.bodySpot)
-    g.circle(60, -56, 5).fill(skin.bodySpot)
+    g.circle(63, -40, 4.5).fill(skin.bodySpot)
     g.circle(52, -82, 3.5).fill(skin.bodySpot)
-    g.ellipse(-40, -92, 15, 7).fill({ color: PALETTE.white, alpha: 0.3 })
 
     // Front feet with toes.
     for (const side of [-1, 1]) {
@@ -467,15 +544,20 @@ export class Pofik {
 
   private drawFace() {
     const g = this.face
+    const e = this.eyes
     const ink = PALETTE.ink
     g.clear()
+    e.clear()
 
-    const worried = (this.hunger01 < 0.25 || this.dead) && this.expression !== 'happy'
+    const worried =
+      (this.hunger01 < 0.25 || this.dead || this.hiding) && this.expression !== 'happy'
 
     for (const side of [-1, 1]) {
       const ex = side * EYE_X
       const ey = EYE_Y
       switch (this.expression) {
+        case 'burp':
+        case 'yawn':
         case 'happy':
           g.arc(ex, ey + 7, 11, Math.PI + 0.35, TAU - 0.35).stroke({
             width: 4.5,
@@ -491,8 +573,17 @@ export class Pofik {
             .stroke({ width: 4.5, color: ink, cap: 'round', join: 'round' })
           break
         }
+        case 'yuck': {
+          // Eyes squeezed shut.
+          g.moveTo(ex - 11, ey + 1)
+            .lineTo(ex - 3, ey - 3)
+            .lineTo(ex + 3, ey + 3)
+            .lineTo(ex + 11, ey - 1)
+            .stroke({ width: 4.5, color: ink, cap: 'round', join: 'round' })
+          break
+        }
         case 'stunned': {
-          g.circle(ex, ey, EYE_R).fill(PALETTE.white).stroke({ width: 3, color: ink })
+          e.circle(ex, ey, EYE_R).fill(PALETTE.white).stroke({ width: 3, color: ink })
           const spin = this.time * 9 * side
           g.moveTo(ex, ey)
           for (let k = 1; k <= 24; k++) {
@@ -504,13 +595,13 @@ export class Pofik {
           break
         }
         default: {
-          g.circle(ex, ey, EYE_R).fill(PALETTE.white).stroke({ width: 3, color: ink })
+          e.circle(ex, ey, EYE_R).fill(PALETTE.white).stroke({ width: 3, color: ink })
           const px = ex + this.look.x
           const py = ey + this.look.y
-          g.circle(px, py, PUPIL_R).fill(ink)
-          g.circle(px - 3, py - 3.5, 2.8).fill(PALETTE.white)
+          e.circle(px, py, PUPIL_R).fill(ink)
+          e.circle(px - 3, py - 3.5, 2.8).fill(PALETTE.white)
           const lid = this.lidLevel()
-          if (lid > 0.02) drawLid(g, ex, ey, EYE_R + 1.5, lid, this.skin.body)
+          if (lid > 0.02) drawLid(g, ex, ey, EYE_R, lid, this.skin.body)
         }
       }
 
@@ -536,10 +627,31 @@ export class Pofik {
     g.ellipse(52, MOUTH_Y + 4, 11, 6).fill({ color: PALETTE.blush, alpha: blushAlpha })
 
     const open = clamp(this.mouthOpen.value, 0, 1.25)
-    if (this.expression === 'boop') {
+    if (this.expression === 'yawn') {
+      // A tall, slow yawn that opens and closes with the expression timer.
+      const open = bump(1 - this.expressionTimer / 1.3)
+      g.ellipse(0, MOUTH_Y + 6 + 10 * open, 12 + 4 * open, 4 + 18 * open)
+        .fill(PALETTE.mouth)
+        .stroke({ width: 3.5, color: ink })
+      if (open > 0.3) g.ellipse(0, MOUTH_Y + 14 + 18 * open, 8, 4 * open).fill(PALETTE.tongue)
+    } else if (this.expression === 'burp') {
+      g.ellipse(0, MOUTH_Y + 10, 17, 15)
+        .fill(PALETTE.mouth)
+        .stroke({ width: 3.5, color: ink })
+      g.ellipse(0, MOUTH_Y + 17, 9, 5).fill(PALETTE.tongue)
+    } else if (this.expression === 'boop') {
       g.ellipse(0, MOUTH_Y + 2, 7, 6)
         .fill(PALETTE.mouth)
         .stroke({ width: 3, color: ink })
+    } else if (this.expression === 'yuck' && open < 0.06) {
+      // Wobbly frown with the tongue poking out.
+      g.ellipse(9, MOUTH_Y + 9, 8, 7)
+        .fill(PALETTE.tongue)
+        .stroke({ width: 3, color: ink })
+      g.moveTo(-26, MOUTH_Y + 2)
+        .quadraticCurveTo(-13, MOUTH_Y - 6, 0, MOUTH_Y + 1)
+        .quadraticCurveTo(13, MOUTH_Y + 8, 26, MOUTH_Y)
+        .stroke({ width: 4, color: ink, cap: 'round' })
     } else if (open < 0.06) {
       const curve = this.dead ? -9 : this.expression === 'stunned' ? -4 : 13
       g.moveTo(-30, MOUTH_Y)
@@ -560,7 +672,11 @@ export class Pofik {
   }
 }
 
-/** Eyelid covering the top of an eye. `level` 0 = open, 1 = closed. */
+/**
+ * Eyelid covering the top of an eye. `level` 0 = open, 1 = closed. Uses the
+ * eye's own radius so the lid line ends inside the eye outline instead of
+ * poking out past it.
+ */
 function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number, color: number) {
   const s = clamp(-1 + 2 * level, -1, 1)
   const t0 = Math.asin(s)
@@ -575,11 +691,7 @@ function drawLid(g: Graphics, cx: number, cy: number, r: number, level: number, 
     .stroke({ width: 3, color: PALETTE.ink })
   g.moveTo(cx - half, edgeY)
     .lineTo(cx + half, edgeY)
-    .stroke({
-      width: 3,
-      color: PALETTE.ink,
-      cap: 'round',
-    })
+    .stroke({ width: 3, color: PALETTE.ink, cap: 'butt' })
 }
 
 /** Builds a hat from its shape data (see draw/hats.ts). */
@@ -606,4 +718,26 @@ function drawHat(art: HatArt) {
   g.position.set(art.x, art.y)
   g.rotation = art.rotation
   return g
+}
+
+let halo: Texture | null = null
+
+/**
+ * Soft round glow for the eyes at night. Rebuilt if a destroyed game took the
+ * cached one with it (React StrictMode mounts the game twice in dev).
+ */
+function haloTexture() {
+  if (halo && !halo.destroyed) return halo
+  const size = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.18, size / 2, size / 2, size / 2)
+  g.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
+  g.addColorStop(0.4, 'rgba(255, 255, 255, 0.35)')
+  g.addColorStop(1, 'rgba(255, 255, 255, 0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, size, size)
+  halo = Texture.from(canvas)
+  return halo
 }

@@ -10,8 +10,10 @@ export class AudioEngine {
   master!: GainNode
   sfx!: GainNode
   ambience!: GainNode
+  music!: GainNode
   noise!: AudioBuffer
   private muted = false
+  private musicOn = true
   private readyListeners = new Set<Listener>()
   private installed = false
 
@@ -70,6 +72,15 @@ export class AudioEngine {
     return this.muted
   }
 
+  /** Music has its own switch on top of the main mute. */
+  setMusic(on: boolean) {
+    this.musicOn = on
+    if (!this.ctx) return
+    const now = this.ctx.currentTime
+    this.music.gain.cancelScheduledValues(now)
+    this.music.gain.setTargetAtTime(on ? 1 : 0, now, 0.1)
+  }
+
   suspend() {
     if (this.ctx?.state === 'running') void this.ctx.suspend().catch(() => {})
   }
@@ -95,6 +106,9 @@ export class AudioEngine {
     this.ambience = ctx.createGain()
     this.ambience.gain.value = 1
     this.ambience.connect(this.master)
+    this.music = ctx.createGain()
+    this.music.gain.value = this.musicOn ? 1 : 0
+    this.music.connect(this.master)
 
     const length = ctx.sampleRate
     this.noise = ctx.createBuffer(1, length, ctx.sampleRate)
