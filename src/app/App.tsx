@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { AnimatePresence, LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { GameHost } from './GameHost'
 import { Achievements } from './screens/Achievements'
@@ -19,32 +20,35 @@ export function App() {
   usePwaUpdate()
 
   return (
-    <MotionConfig reducedMotion="user">
-      <LazyMotion features={domAnimation} strict>
-        <div className="desk">
-          <main className="device">
-            <GameHost>
-              <div className="ui-layer">
-                <AnimatePresence>
-                  {screen === 'title' && <TitleScreen key="title" />}
-                  {screen === 'wardrobe' && <Wardrobe key="wardrobe" />}
-                  {screen === 'achievements' && <Achievements key="achievements" />}
-                  {screen === 'modes' && <Modes key="modes" />}
-                  {screen === 'missions' && <Missions key="missions" />}
-                  {screen === 'stats' && <Stats key="stats" />}
-                  {(screen === 'playing' || screen === 'paused') && <Hud key="hud" />}
-                  {screen === 'paused' && <PauseMenu key="pause" />}
-                  {screen === 'over' && <GameOverScreen key="over" />}
-                </AnimatePresence>
-                <Toasts />
-                <AnimatePresence>{screen === 'boot' && <Splash key="splash" />}</AnimatePresence>
-                <MockAdOverlay />
-              </div>
-            </GameHost>
-            <RotateDevice />
-          </main>
-        </div>
-      </LazyMotion>
-    </MotionConfig>
+    <>
+      <MotionConfig reducedMotion="user">
+        <LazyMotion features={domAnimation} strict>
+          <div className="desk">
+            <main className="device">
+              <GameHost>
+                <div className="ui-layer">
+                  <AnimatePresence>
+                    {screen === 'title' && <TitleScreen key="title" />}
+                    {screen === 'wardrobe' && <Wardrobe key="wardrobe" />}
+                    {screen === 'achievements' && <Achievements key="achievements" />}
+                    {screen === 'modes' && <Modes key="modes" />}
+                    {screen === 'missions' && <Missions key="missions" />}
+                    {screen === 'stats' && <Stats key="stats" />}
+                    {(screen === 'playing' || screen === 'paused') && <Hud key="hud" />}
+                    {screen === 'paused' && <PauseMenu key="pause" />}
+                    {screen === 'over' && <GameOverScreen key="over" />}
+                  </AnimatePresence>
+                  <Toasts />
+                  <AnimatePresence>{screen === 'boot' && <Splash key="splash" />}</AnimatePresence>
+                  <MockAdOverlay />
+                </div>
+              </GameHost>
+              <RotateDevice />
+            </main>
+          </div>
+        </LazyMotion>
+      </MotionConfig>
+      <Analytics />
+    </>
   )
 }
