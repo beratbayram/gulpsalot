@@ -146,7 +146,8 @@ Skin and hat unlock scores are in `src/game/cosmetics.ts`.
 Gulpsalot is its own Vercel project, served from the root of `gulpsalot.beratbayram.com`.
 Assets are built with `base: '/'` and the service worker covers the whole domain.
 `vercel.json` sends hashed assets with a one-year immutable cache and keeps `sw.js`
-uncached.
+uncached. Page views are counted with Vercel Web Analytics (`<Analytics />` in
+`src/app/App.tsx`); it only reports once Analytics is enabled on the Vercel project.
 
 One-time setup:
 

@@ -141,7 +141,9 @@ in production.
 
 Production is `gulpsalot.beratbayram.com`, its own Vercel project served from the domain
 root. Vite `base` and the service worker scope are both `/`; `vercel.json` only sets cache
-headers. `GULPSALOT_BASE=./` produces relative paths for native builds.
+headers. `GULPSALOT_BASE=./` produces relative paths for native builds. Vercel Web Analytics
+is mounted once in `src/app/App.tsx`; it reports to the Vercel origin, so a native build has no
+endpoint for it.
 
 ## Conventions
 
